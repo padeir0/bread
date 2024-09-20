@@ -59,6 +59,10 @@ h1, h2, h3 {
   border-radius: 2px;
 }
 
+.header a {
+  padding: 0 2em 0 2em;
+}
+
 .header img {
   height: 1em;
 }
