@@ -1,0 +1,110 @@
+<html>
+<head>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="icon" href="../../images/bread.png">
+  <title>mpc</title>
+</head>
+<body>
+<div class="header">
+  <a href="../../index.html"><img class="icon" src="../../images/bread.png"></a>
+  <a href="https://github.com/padeir0"><img class="icon" src="../../images/github-mark.png"></a>
+</div>
+<div class="container">
+  <div class="title">
+    <h1>The Millipascal Compiler</h1>
+  </div>
+  <div class="abstract">
+    <p>
+      This document is an exposition of the Millipascal compiler (<code>mpc</code>),
+      it explains on a high level how each component of the compiler works,
+      and serves as resource for other people who are trying to solve
+      similar problems as i did.
+    </p>
+  </div>
+  <div class="summary">
+    <ol>
+      <li><a href="#mp-briefly">A brief description of Millipascal</a></li>
+      <li><a href="#mpc-briefly">The overall compiler architecture</a></li>
+      <li><a href="#ast">The abstract syntax tree (AST)</a></li>
+      <li><a href="#lex-parser">Lexer and parser</a></li>
+      <li><a href="#files">Files and modules</a></li>
+      <li><a href="#module-graph">The module graph</a></li>
+      <li><a href="#scope">The data structure for scopes</a></li>
+      <li><a href="#name-resolution">Steps in name resolution</a></li>
+      <li><a href="#types">The type system</a></li>
+      <li><a href="#type-of-types">The data structures for types</a></li>
+      <li><a href="#typechecking">Type inference and type checking</a></li>
+      <li><a href="#abstract-machine">The abstract machine</a></li>
+      <li><a href="#hir">The High level Intermediate Representation (HIR)</a></li>
+      <li><a href="#ast-hir">From AST to HIR</a></li>
+      <li><a href="#hir-errors">Checking proper returns</a></li>
+      <li><a href="#hir-validation">HIR validation</a></li>
+      <li><a href="#mir">The Middle-level Intermediate Representation (MIR)</a></li>
+      <li><a href="#hir-mir">From HIR to MIR (register allocation)</a></li>
+      <li><a href="#mir-fasm">From MIR to FASM</a></li>
+      <li><a href="#end">The End</a></li>
+    </ol>
+  </div>
+  <section>
+    <h2 id="mp-briefly">A brief description of Millipascal</h2>
+  </section>
+  <section>
+    <h2 id="mpc-briefly">The overall compiler architecture</h2>
+  </section>
+  <section>
+    <h2 id="ast">The abstract syntax tree (AST)</h2>
+  </section>
+  <section>
+    <h2 id="lex-parser">Lexer and parser</h2>
+  </section>
+  <section>
+    <h2 id="files">Files and modules</h2>
+  </section>
+  <section>
+    <h2 id="module-graph">The module graph</h2>
+  </section>
+  <section>
+    <h2 id="scope">The data structure for scopes</h2>
+  </section>
+  <section>
+    <h2 id="name-resolution">Steps in name resolution</h2>
+  </section>
+  <section>
+    <h2 id="types">The type system</h2>
+  </section>
+  <section>
+    <h2 id="type-of-types">The data structures for types</h2>
+  </section>
+  <section>
+    <h2 id="typechecking">Type inference and type checking</h2>
+  </section>
+  <section>
+    <h2 id="abstract-machine">The abstract machine</h2>
+  </section>
+  <section>
+    <h2 id="hir">The High level Intermediate Representation (HIR)</h2>
+  </section>
+  <section>
+    <h2 id="ast-hir">From AST to HIR</h2>
+  </section>
+  <section>
+    <h2 id="hir-errors">Checking proper returns</h2>
+  </section>
+  <section>
+    <h2 id="hir-validation">HIR validation</h2>
+  </section>
+  <section>
+    <h2 id="mir">The Middle-level Intermediate Representation (MIR)</h2>
+  </section>
+  <section>
+    <h2 id="hir-mir">From HIR to MIR (register allocation)</h2>
+  </section>
+  <section>
+    <h2 id="mir-fasm">From MIR to FASM</h2>
+  </section>
+  <section>
+    <h2 id="end">The End</h2>
+  </section>
+</div>
+</body>
+</html>
