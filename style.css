@@ -42,6 +42,7 @@ body {
   font-family: 'Latin Modern', Georgia, Cambria, 'Times New Roman', Times, serif;
   line-height: 1.3em;
   text-rendering: optimizeLegibility;
+  margin: 0 1em 0 1em
 }
 
 h1, h2, h3 {
@@ -123,8 +124,12 @@ p code, li code {
   height: fit-content;
 }
 
-.summary ol {
+ol {
   list-style-type: lower-roman;
+}
+
+table th, td {
+  text-align: center;
 }
 
 .img-container {

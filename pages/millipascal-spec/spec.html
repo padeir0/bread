@@ -1,0 +1,1362 @@
+<html>
+<head>
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../normalize.css">
+  <link rel="icon" href="../../images/bread.png">
+  <title>millipascal spec</title>
+</head>
+<body>
+<div class="header">
+  <a href="../../index.html">bread</a>
+  <a href="https://github.com/padeir0">github</a>
+</div>
+<div class="container">
+  <div class="title">
+    <h1>The Millipascal Specification</h1>
+  </div>
+  <div class="abstract">
+    <p>
+      This document serves as an informal specification of the millipascal
+      language. Although the language is very simple,
+      this is an auxiliary resource to read the <a href="../mpc/mpc.html">mpc article</a>.
+    </p>
+  </div>
+  <div class="summary">
+    <ol>
+      <li><a href="#how-to-read">How to read this document</a></li>
+      <li><a href="#scope">The scope of the language</a></li>
+      <li><a href="#lexical-elements">Lexical Elements</a>
+        <ol>
+          <li><a href="#identifiers">Identifiers</a></li>
+          <li><a href="#keywords">Keywords</a></li>
+          <li><a href="#ponctuation">Operators and ponctuation</a></li>
+          <li><a href="#num-literals">Numerical literals</a></li>
+          <li><a href="#comments">Comments</a></li>
+          <li><a href="#str-char">Strings and chars</a></li>
+        </ol>
+      </li>
+      <li><a href="#gramatical-elements">Gramatical Elements</a>
+        <ol>
+          <li><a href="#module">Module</a></li>
+          <li><a href="#coupling">Coupling</a></li>
+          <li><a href="#symbols">Symbols and attributes</a></li>
+          <li><a href="#data">Data</a></li>
+          <li><a href="#const">Const</a></li>
+          <li><a href="#structs">Structs</a></li>
+          <li><a href="#procedures">Procedures</a></li>
+          <li><a href="#blocks">Blocks</a></li>
+          <li><a href="#if">If Statements</a></li>
+          <li><a href="#loops">While and Do-While Statements</a></li>
+          <li><a href="#termination">Return and Exit Statements</a></li>
+          <li><a href="#set">Set Statements</a></li>
+          <li><a href="#expr">Expressions</a></li>
+          <li><a href="#factors">Factors</a></li>
+          <li><a href="#asm">Asm</a></li>
+        </ol>
+      </li>
+      <li><a href="#asm">Asm Code</a>
+        <ol>
+          <li><a href="#instr">Instructions</a></li>
+          <li><a href="#regs">Registers</a></li>
+          <li><a href="#addressing">Addressing</a></li>
+          <li><a href="#const-asm">Constant expressions</a></li>
+          <li><a href="#globals-asm">Globals</a></li>
+          <li><a href="#labels-asm">Labels</a></li>
+          <li><a href="#names-asm">Names</a></li>
+          <li><a href="#stack">Stack calling convention</a></li>
+          <li><a href="#reg">Register calling convention</a></li>
+        </ol>
+      </li>
+      <li><a href="#grammar">Full Grammar</a></li>
+    </ol>
+  </div>
+  <section>
+    <h2 id="how-to-read">How to read this document</h2>
+    <p>
+      There are at least two languages beside english in this document.
+      One, of course, is Millipascal itself. The other one is a
+      language meant for describing languages: a meta-language.
+    <p>
+    <p>
+      This meta-language is based on Backus-Naur Form (BNF),
+      more specifically, it is <a href="https://en.wikipedia.org/wiki/Wirth_syntax_notation">Wirth Syntax Notation</a> (WSN),
+      created by Niklaus Wirth, the creator of Pascal.
+      The only minor deviation I make is that I use single quotes
+      <code>'</code> where Wirth would use double quotes <code>"</code>.
+    </p>
+    <p>
+      Some things were never implemented in the millipascal compiler (<code>mpc</code>),
+      i mark those things with <b>(TBD)</b>, meaning "To Be Done".
+    </p>
+  </section>
+  <section>
+    <h2 id="scope">The scope of the language</h2>
+    <p>
+      Millipascal is a language meant exclusively for amd64.
+      It is low level and architecture dependent, and was
+      made as an personal exercise to learn about compilers.
+    <p>
+  </section>
+  <section>
+    <h2 id="lexical-elements">Lexical Elements</h2>
+    <p>
+      Millipascal source is UTF8 encoded, but only comments
+      can carry arbitrary codepoints, source code is limited
+      to ASCII. Whitespace serves only as token separators,
+      and otherwise have no semantic meaning.
+    </p>
+    <section>
+      <h3 id="identifiers">Identifiers</h3>
+      <p>
+        Identifiers are similar to C, if not identical.
+        They're simply the regex <code>[a-zA-Z_][a-zA-Z0-9_]*</code>.
+      </p>
+<pre><code>id = letterPlus {letterPlus | digit}.
+letterPlus = letter | '_'.
+letter = 'a'|'b'|'c'|'d'|'e'|'f'|'g'|'h'|'i'|'j'|
+         'k'|'l'|'m'|'n'|'o'|'p'|'q'|'r'|'s'|'t'|
+         'u'|'v'|'w'|'x'|'y'|'z'|'A'|'B'|'C'|'D'|
+         'E'|'F'|'G'|'H'|'I'|'J'|'K'|'L'|'M'|'N'|
+         'O'|'P'|'Q'|'R'|'S'|'T'|'U'|'V'|'W'|'X'|
+         'Y'|'Z'.
+digit  = '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'.</code></pre>
+    </section>
+    <section>
+      <h3 id="keywords">Keywords</h3>
+      <p>
+        Millipascal is a very keywordy language, most of them are used
+        only once. In general, i find keywords easier to read than
+        arbitrary symbols.
+        The following identifiers are reserved:
+      </p>
+<pre><code>var   proc   begin  end    while if     else   elseif
+or    and    not    data   i8    i16    i32    i64   
+u8    u16    u32    u64    bool  ptr    true   false 
+exit  import from   export const sizeof return set   
+attr  as     all    struct void  asm</code></pre>
+    </section>
+    <section>
+      <h3 id="ponctuation">Operators and ponctuation</h3>
+      <p>
+        Even though there are quite a few keywords, because
+        there's almost no operator overloading, there are
+        quite a few symbols too.
+      </p>
+<pre><code>,   :   (   )   [   ]   {   }
+=   ==  !=  &gt;   &gt;=  &lt;   &lt;=  +
+-   *   /   %   -=  +=  *=  /=
+%=  .   @   ::  ~   &   |   !
+^   &gt;&gt;  &lt;&lt;  -&gt;  ?   '   "   &lt;&gt;
+++  --</code></pre>
+      <p>
+        As done in other languages,
+        operators listed here are considered a single token.
+      </p>
+    </section>
+    <section>
+      <h3 id="num-literals">Numerical literals</h3>
+<pre><code>number = decimal | hexadecimal | binary.
+decimal = digit {decDigits} [numEnding].
+hexadecimal = '0x' hexDigits {hexDigits} [numEnding].
+binary = '0b' binDigits {binDigits} [numEnding].
+decDigits = digit | '_'.
+hexDigits = digit | 'A'|'B'|'C'|'D'|'E'|'F'|
+                    'a'|'b'|'c'|'d'|'e'|'f'|'_'.
+binDigits = '0'|'1'|'_'.
+numEnding = 'p'|'s'|'ss'|'l'|'u'|'us'|'uss'|'ul'.</code></pre>
+      <p>
+        Literals can be written in three bases: decimal, hexadecimal and binary.
+        Octal is not provided. Underscore is ignored, and can be used to group digits.
+        Each number can end with a postfix that specifies a type,
+        defined as the following:
+      </p>
+      <ul>
+        <li><code>p</code>: <code>ptr</code></li>
+        <li><code>ss</code>: <code>i8</code> (shorter short)</li>
+        <li><code>s</code>: <code>i16</code> (short)</li>
+        <li>no postfix: <code>i32</code></li>
+        <li><code>l</code>: <code>i64</code> (long)</li>
+        <li><code>uss</code>: <code>u8</code> (unsigned shorter short)</li>
+        <li><code>us</code>: <code>u16</code> (unsigned short)</li>
+        <li><code>u</code>: <code>u32</code> (unsigned)</li>
+        <li><code>ul</code>: <code>u64</code> (unsigned long)</li>
+      </ul>
+      <p>
+        Very important: a number without postfix defaults to <code>i32</code>,
+        it does not remain untyped like in Go. This is why some code use <code>i32</code>
+        for things where a smaller integer would suffice.
+      </p>
+    </section>
+    <section>
+      <h3 id="comments">Comments</h3>
+      <p>
+        Comments start with <code>#</code> and end with a newline. These are not
+        specified in the full grammar, and are considered whitespace.
+        Parsers can completely ignore them.
+      </p>
+    </section>
+    <section>
+      <h3 id="str-char">Strings and chars</h3>
+<pre><code>escapes = '\\"' | '\\'' | '\\n' | '\\t' | '\\r'.
+string = '"' {ascii|escapes} '"'.
+char = '\'' (ascii|escapes) '\''.</code></pre>
+      <p>
+        Strings and characters are ascii, no fuzz here.
+        If you need to encode other UTF8 codepoints use blobs and
+        number literals. These two require a little smartness
+        in the lexer, because of escapes and arbitrary ascii
+        values, but can be dealt easily.
+      </p>
+    </section>
+  </section>
+  <section>
+    <h2 id="gramatical-elements">Gramatical Elements</h2>
+    <section>
+      <h3 id="module">Module</h3>
+      <pre><code>Module = {Coupling} {AttSymbol}.</code></pre>
+      <p>
+        Each file in Millipascal is a module. Modules can be imported,
+        but must be done at the top of each file. The grammar
+        separates module information from symbol information,
+        and makes sure the source is properly organized.
+      </p>
+    </section>
+    <section>
+      <h3 id="coupling">Coupling</h3>
+<pre><code>Coupling = Import | FromImport | Export.
+
+Import = 'import' Items.
+FromImport = 'from' id 'import' Items.
+Export = 'export' Items.
+Items = (AliasList | 'all').
+AliasList = Alias {',' Alias} [','].
+Alias = id ['as' id].</code></pre>
+      <p>
+        When importing a module, the name of the module is the name of
+        the file up to the first dot. That is: if <code>abc.E001.mp</code>
+        is your library, then you'd import it with <code>import abc</code>.
+        The same goes for <code>from abc import ...</code>.
+      </p>
+      <p>
+        The compiler expects all modules to be in the same folder.
+        Suppose <code>M.mp</code> is your library, defined as follows:
+      </p>
+<pre><code>export One, Two
+
+const begin
+  One = 1;
+  Two = 2;
+  Three = 3;
+end</code></pre>
+      <p>
+        If in another file (in the same folder) you write <code>import M</code>,
+        then you can access the value of <code>One</code> by <code>M::One</code>,
+        while <code>M::Three</code> should yield an error, as it is not
+        exported by <code>M</code>. In other languages you'd write <code>public int One = 1;</code>,
+        the explicit <code>export ...</code> makes sure the whole module-to-module
+        interface is directly documented in the top of each file, this
+        is my preferred approach.
+      </p>
+      <p>
+        If you write <code>from M import One</code>, then the value of <code>One</code>
+        is available as if it was a global defined in the current module,
+        and can be accessed as usual. If you write <code>from M import all</code>,
+        then <b>all exported symbols</b> are brought into global scope,
+        in this case, you'd be able to access <code>One</code> and <code>Two</code>
+        as global constants, but not <code>Three</code>.
+      </p>
+      <p>
+        Aliases work as you expect, similar to declarations.
+      </p>
+      <pre><code>import M as N</code></pre>
+      <p>
+        Here, the module <code>M</code> is imported, but the name <code>M</code> is shadowed
+        in favor of the name <code>N</code>. So that you'd do <code>N::One</code> instead of
+        <code>M::One</code>.
+      </p>
+      <pre><code>from M import One as Um, Two as Dois</code></pre>
+      <p>
+        Something similar happens here, the module <code>M</code> is imported
+        and the items <code>One</code> and <code>Two</code> are brought into global scope,
+        but their names are shadowed in favour of <code>Um</code> and <code>Dois</code>,
+        respectively.
+      </p>
+      <p>
+        If <code>M</code> exported <code>One</code> and <code>Two</code> in the following way:
+      </p>
+      <pre><code>export One as Um, Two as Dois</code></pre>
+      <p>
+        Then <code>One</code> and <code>Two</code> are exposed externally,
+        but they must be imported or used as <code>Um</code> and <code>Dois</code>, respectively.
+        That is, <code>M::Um</code> or <code>from M import Um</code> instead of the way done previously.
+      </p>
+      <p>
+        Note that modules are imported by name, and names must be identifiers,
+        so file names must obey identifier restrictions, otherwise it is
+        not possible to import it. A file named <code>import.mp</code> can't be imported
+        as <code>import import</code>, be sure to use the power of common sense.
+      </p>
+    </section>
+    <section>
+      <h3 id="symbols">Symbols and attributes</h3>
+<pre><code>AttSymbol = [Attributes] Symbol [';'].
+Attributes = 'attr' IdList.
+IdList = id {',' id} [','].
+
+Symbol = Procedure
+    | Data
+    | Const
+    | Struct.</code></pre>
+      <p>
+        Symbols may be preceded by attributes, these are simply
+        identifiers that are recognized by the compiler, and can
+        be used to perform conditional compilation for different targets,
+        setting padding, changing ABI, etc. <b>(TBD)</b>
+      </p>
+      <p>
+        Note: attributes were never implemented in <code>mpc</code>, although
+        the parser will properly parse them, attributes are completely
+        ignored by the compiler.
+      </p>
+    </section>
+    <section>
+      <h3 id="data">Data</h3>
+<pre><code>Data = 'data' (SingleData|MultipleData).
+MultipleData = 'begin' {SingleData ';'} 'end'.
+SingleData =  id [Annot] (DExpr|string|Blob).
+Blob = '{' ExprList '}'.
+DExpr = '[' [Expr] ']'.</code></pre>
+      <p>
+        Data defines static memory, available without interference from the operating
+        system, that is, with no interference besides program loading, i guess. It can
+        be reserved or declared, reserved takes an expression inside square brackets
+        that define the amount to be reserved, and depends on the underlying type
+        of the data definition (<code>data a:S [52]</code> will allocate <code>52*sizeof[S]</code> bytes).
+        While declared can be of two other subkinds: blob and string.
+      </p>
+      <p>
+        String data declarations encode a string into memory, computing their
+        size. If <code>data M "abcdefgh"</code> is a declaration, then <code>sizeof[M]</code>
+        gives the size of <code>M</code> in bytes.
+      </p>
+      <p>
+        Blob data declarations encode arbitrary numbers and symbols into
+        a section of memory, and may be optionally annotatted with structs
+        so that the compiler may check whether the types are placed correctly,
+        this is optional, however, you must know what you're doing.
+      </p>
+    </section>
+    <section>
+      <h3 id="const">Const</h3>
+<pre><code>Const = 'const' (SingleConst|MultipleConst).
+SingleConst = id '=' Expr.
+MultipleConst = 'begin' {SingleConst ';'} 'end'.</code></pre>
+      <p>
+        Constants works basically as <code>define</code> in C, but they are evaluated
+        at compile time with arbitrary precision arithmetic, when casting
+        the value to the actual type, values should saturate instead of
+        overflow, that is: if <code>300</code> is assigned to an <code>i8</code>, the value
+        is set to the largest <code>i8</code> value, ie, <code>127</code>, instead of overflowing.
+      </p>
+    </section>
+    <section>
+      <h3 id="structs">Structs</h3>
+<pre><code>Struct = 'struct' id [Size] 'begin' {Field ';'} 'end'.
+Size = '[' Expr ']'.
+Field = IdList Annot [Offset].
+Offset = '{' Expr '}'.</code></pre>
+      <p>
+        Structs create new nominal types that represent the structure of an
+        object at a pointer. This is very important: structs are not first
+        class, they are only additional information for pointers,
+        and are not "value based", like in C. This means you can
+        readily cast a <code>ptr</code> to any struct, and any struct to a <code>ptr</code>,
+        and even any struct to any other struct.
+      </p>
+      <p>
+        A struct can either be explicitly or implicitly set.
+        When explicitly set, the size of the whole struct
+        and the offsets of each field must be specified by the programmer
+        using constant expressions.
+        When implicitly set, the size and offsets must be left out,
+        and the compiler computes those for you, by default, all structs
+        are packed, but it should be possible to add attributes
+        to change the padding requirements.
+      </p>
+      <p>
+        Padding attributes that should be reserved are: <code>c_pad</code> and
+        <code>align_pack</code>. The first computes padding just like a C struct,
+        with proper internal and trailing padding, the second one allows
+        the compiler to reorder fields for proper structure packing,
+        without losing alignment guarantees. <b>(TBD)</b>
+      </p>
+      <p>
+        Inner fields of structs are not inlined, in the following
+        struct, the field <code>List.Next</code> is only a pointer,
+        <b>structs are not first class objects</b>.
+      </p>
+<pre><code>struct List begin
+    X, Y:i64;
+    Next:List;
+end</code></pre>
+      <p>
+        Structs behave just like constants in a sense, they specify
+        offset tables and object size, and these must be verified for circularity.
+        The size of a struct is a constant in itself, just like each field,
+        and cycles between size and field offset should be checked.
+        The following struct is misbehaving in this regard:
+      </p>
+<pre><code>const size = A.X + 8;
+struct A [size] begin
+    X:i64 {size+1};
+end</code></pre>
+      <p>
+        Given a structure <code>B</code>, then <code>sizeof[B]</code> yields the size of the struct
+        in bytes, even if it is explicit or implicit, all structs have size,
+        but keep in mind that structs are sugar for <code>ptr</code>s, and fields or arrays
+        may have these structs either inlined or through a layer of indirection,
+        as such, the size might be <code>sizeof[B]</code> or <code>sizeof[ptr]</code>. Good practice
+        is to do the following:
+      </p>
+<pre><code>struct refB begin
+    B:B;
+end
+
+data M1:B [8]
+data M2:refB [8]</code></pre>
+      <p>
+        In the above example, <code>sizeof[M1]</code> is <code>8 * sizeof[B]</code> while
+        <code>sizeof[M2]</code> is <code>8 * sizeof[ptr]</code> (<code>sizeof[ptr] == sizeof[refB]</code>),
+        that is, the second buffer has only pointers to these <code>B</code> objects.
+      </p>
+      <p>
+        If multiple field names precede a type (<code>a, b, c:i64</code>), then all those fields
+        are of that type, a single offset can't be applied to all of them at the same time,
+        <code>a, b, c:i64 {0}</code> should result in an error.
+      </p>
+    </section>
+    <section>
+      <h3 id="procedures">Procedures</h3>
+<pre><code>Procedure = 'proc' id [CC] [Signature] [Vars] (Asm|Block).
+
+CC := '&lt;' id '&gt;'.
+
+Signature = DArgs [Rets].
+DArgs = '[' [DeclList] ']'.
+Vars = 'var' DeclList.
+
+Rets = TypeList.
+TypeList = Type {',' Type} [','].
+
+DeclList = Decl {',' Decl} [','].
+Decl = IdList Annot.
+Annot = ':' Type.</code></pre>
+      <p>
+        Procedures can have multiple returns, obviously. Variables
+        are declared separatedly, together with the procedure, which
+        means the language is only losely lexical scoped, there are two scopes:
+        global and local. Nothing else.
+      </p>
+      <p>
+        It is possible to write <code>a,b,c:i64</code> in a declaration,
+        which means all preceding variables have that type.
+      </p>
+      <p>
+        The body of the procedure can be of two types, one is
+        in a high level code, while the other is amd64 assembly.
+      </p>
+      <p>
+        The <code>CC</code> specified is the calling convention, one of:
+      </p>
+      <ul>
+        <li><code>stack</code> arguments and returns are passed on the stack, only <code>rsp</code> and <code>rbp</code> preserved (default)</li>
+        <li><code>reg</code> <b>(TBD)</b> arguments and returns are passed in registers, only <code>rsp</code> and <code>rbp</code> preserved</li>
+        <li><code>cdecl</code> <b>(TBD)</b> C calling convention, guarantees to save <code>rsp</code> and <code>rbp</code> too, amongst other registers</li>
+        <li><code>gc</code> <b>(TBD)</b> Garbage collector compatible calling convention, saves <code>rsp</code> and <code>rbp</code>.</li>
+      </ul>
+      <p>
+        If no CC is specified, it defaults to <code>stack</code>. Calling convetion
+        is part of the type of a procedure, assigning a <code>stack</code> procedure
+        to a <code>reg</code> procedure should yield a compile time error.
+      </p>
+    </section>
+    <section>
+      <h3 id="blocks">Blocks</h3>
+<pre><code>Block = 'begin' {Statement} 'end'.
+
+Statement = If [';']
+      | While [';']
+      | DoWhile [';']
+      | Return ';'
+      | Set ';'
+      | Exit ';'
+      | Expr ';'.</code></pre>
+      <p>
+        Blocks are delimited sequences of statements, most of which
+        are terminated with semicolons. Millipascal does not have
+        naked blocks, nested arbitrarely, that is not useful, as
+        there are only two scopes (local and global) and blocks
+        can't create new ones.
+      </p>
+      <p>
+        All of these statements, except expressions, begin with a keyword.
+      </p>
+    </section>
+    <section>
+      <h3 id="if">If Statements</h3>
+<pre><code>If = 'if' Expr Block {ElseIf} [Else].
+ElseIf = 'elseif' Expr Block.
+Else = 'else' Block.</code></pre>
+      <p>
+        If statements are the only form of selective control flow.
+        They accept an expression of type <code>bool</code>, if it is <code>true</code>,
+        they execute the immediate block, if not, they descend into
+        the next one, if no blocks are entered, the <code>else</code> block,
+        if present, is executed.
+      </p>
+    </section>
+    <section>
+      <h3 id="loops">While and Do-While Statements</h3>
+<pre><code>While = 'while' Expr Block.
+DoWhile = 'do' Block 'while' Expr.</code></pre>
+      <p>
+        There are only two loop constructs, only one would suffice,
+        but the other is included for simmetry.
+      </p>
+      <p>
+        While loops execute the condition expression first, if it is true, the
+        block is executed and returns back to check the condition, if it is false,
+        it continues to the next statement.
+      </p>
+      <p>
+        Do-while loops execute the block first, then check the condition,
+        looping back if true, continuing if false.
+      </p>
+    </section>
+    <section>
+      <h3 id="termination">Return and Exit Statements</h3>
+<pre><code>Return = 'return' [ExprList].
+Exit = 'exit' ['?'] [Expr].</code></pre>
+      <p>
+        There are two ways to exit early from a procedure, returning
+        from the procedure or terminating the program. These are the
+        only two ways to introduce exit points.
+      </p>
+      <p>
+        You may return more than a single value from any procedure,
+        as such, the return statement can take multiple expressions,
+        or none, for that matter.
+      </p>
+      <p>
+        The expression in an exit statement is the exit code of the program,
+        this may be ignored by the operating system, but on linux, it is useful
+        for debugging.
+      </p>
+      <p>
+        Exit statements may optionally include a interrogation mark,
+        by writting <code>exit?;</code>, the program should unwind the stack
+        trace and print it before terminating, this is used mostly
+        for debugging, and should be turned off in "release" builds.
+      </p>
+    </section>
+    <section>
+      <h3 id="set">Set Statements</h3>
+<pre><code>Set = 'set' ExprList (Assign|IncDec).
+IncDec = '++' | '--'.
+Assign = assignOp Expr.
+assignOp = '=' | '-=' | '+=' | '/=' | '*=' | '%=' | '&lt;&gt;'.</code></pre>
+      <p>
+        Set statements are quite complex and complexity must be justified.
+      </p>
+      <p>
+        In it's simplest form, <code>set a++;</code> or <code>set a--;</code> simply increment
+        or decrement a numerical or pointer value. In special, if <code>a</code> is a
+        struct type, it is incremented or decremented by <code>sizeof[STRUCT]</code>,
+        that is, in this case, <code>set a++</code> would be the same as <code>set a += sizeof[STRUCT]</code>,
+        while for numbers and raw pointers, it is the same as <code>set a += 1;</code>.
+        These exist to avoid doing pointer arithmetic with structs,
+        ie, <code>set a += 1;</code> would slide the struct representation one byte to the
+        left, this is can lead to careless mistakes.
+      </p>
+      <p>
+        If instead an assignment operator is being used, we speak of the
+        values at the left hand side of the operator as LHS, and 
+        the values at the right hand side as RHS. RHS always evaluates
+        before the LHS, and if multiple expressions are in the LHS,
+        they are evaluated from left to right.
+      </p>
+      <p>
+        The expressions in the LHS must be <b>assignable</b> in all cases,
+        the RHS must be <b>assignable</b> only in swap (<code>&lt;&gt;</code>) operations.
+      </p>
+      <p>
+        We define an <b>assignable</b> expression simply by the
+        top-level expression type. If the expression is a simple identifier,
+        then it must be a local (be it argument or variable) to be assignable,
+        if, however, the expression is a dereference, it is always assignable.
+        This includes struct field dereference operations (<code>a->b</code>),
+        so that <code>set a->b = 1;</code> is valid.
+      </p>
+      <p>
+        Note that <code>set a[i] = j;</code> is invalid, as <code>a[i]</code> is a computed offset,
+        if you're working with arrays, you must write <code>set a[i]->field = j;</code>,
+        where <code>field</code> is the one (and maybe only) field you want to modify.
+      </p>
+      <p>
+        The LHS is allowed to contain multiple expressions if, and only if
+        the assignment operator is <code>=</code> and the RHS contains an expression
+        that is multi-valued, ie, a procedure with multiple returns. If
+        these conditions are not met, the compiler should yield an error.
+        We allow this so that procedures can return multiple values freely.
+        In case multiple expressions are present in the LHS,
+        types should be checked in order,
+        from left to right, so that each type on the LHS
+        corresponds to the same type from the multi-valued expression.
+      </p>
+      <p>
+        Arithmetical operators (<code>-=</code>, <code>+=</code>, <code>/=</code>, <code>*=</code> and <code>%=</code>)
+        are included for the sake of brevity, and because they fit
+        marvelously with two and three-address instructions.
+        They work the same as <code>set LHS = LHS <op> RHS;</code>,
+        but the LHS is evaluated only once.
+      </p>
+      <p>
+        Last, but not least, is the swap operator </code>&lt;&gt;</code>, which is
+        included for brevity. Swapping two values
+        is a common operation, and should have built-in support.
+        In this case both the LHS and RHS must be <b>assignable</b>,
+        and RHS is still evaluated before the LHS.
+      </p>
+    </section>
+    <section>
+      <h3 id="expr">Expressions</h3>
+      <p>
+        Expressions can be statements, or can appear in other statements.
+        It's allowed to be a statement so that we can evaluate procedures
+        that return no values, or those whose values are being ignored.
+      </p>
+<pre><code>ExprList = Expr {',' Expr} [','].
+Expr = And {'or' And}.
+And = Comp {'and' Comp}.
+Comp = Sum {compOp Sum}.
+compOp = '==' | '!=' | '&gt;' | '&gt;=' | '&lt;' | '&lt;='.
+Sum = Mult {sumOp Mult}.
+sumOp = '+' | '-' | '|' | '^'.
+Mult = UnaryPrefix {multOp UnaryPrefix}.
+multOp = '*' | '/' | '%' | '&' | '&lt;&lt;' | '&gt;&gt;'.
+UnaryPrefix = {Prefix} UnarySuffix.
+UnarySuffix = Factor {Suffix}.
+
+Prefix = 'not' | '~' | '!'.
+Suffix = Conversion
+    | Deref
+    | Call
+    | DotAccess
+    | ArrowAccess.
+
+Conversion = Annot.
+Call = '[' [ExprList] ']'.
+Deref = '@' Type.
+DotAccess = '.' id.
+ArrowAccess = '-&gt;' id.</code></pre>
+      <p>
+        Expression syntax definition is ugly because we encode the precedence
+        directly in the grammar, this allows us to parse it without ambiguity,
+        and doesn't require any additional constructs beside standard recursive
+        descent.
+      </p>
+      <p>
+        Precedence can be viewed separatedly in a table:
+      </p>
+      <center>
+        <table>
+          <thead>
+            <tr>
+              <th>Precedence</th>
+              <th>Operators</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>0</td>
+              <td><code>or</code></td>
+            </tr>
+            <tr>
+              <td>1</td>
+              <td><code>and</code></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td><code>==</code>, <code>!=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>&lt;</code>, <code>&lt;=</code>,</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td><code>+</code>, <code>-</code>, <code>|</code>, <code>^</code></td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td><code>*</code>, <code>/</code>, <code>%</code>, <code>&amp;</code>, <code>&lt;&lt;</code>, <code>&gt;&gt;</code></td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>(suffix) <code>:</code>, <code>[]</code>, <code>.</code>, <code>-&gt;</code>, <code>@</code></td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>(prefix) <code>not</code>, <code>~</code>, <code>!</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </center>
+      <p>
+        Operations are described in the following table:
+      </p>
+      <center>
+        <table>
+          <thead>
+            <tr>
+              <th>Operation</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>or</code></td>
+              <td>Logical disjunction</td>
+            </tr>
+            <tr>
+              <td><code>and</code></td>
+              <td>Logical conjunction</td>
+            </tr>
+            <tr>
+              <td><code>not</code></td>
+              <td>Logical negation</td>
+            </tr>
+            <tr>
+              <td><code>==</code></td>
+              <td>Equals</td>
+            </tr>
+            <tr>
+              <td><code>!=</code></td>
+              <td>Unequals</td>
+            </tr>
+            <tr>
+              <td><code>&gt;</code></td>
+              <td>Greater than</td>
+            </tr>
+            <tr>
+              <td><code>&gt;=</code></td>
+              <td>Greater or equals</td>
+            </tr>
+            <tr>
+              <td><code>&lt;</code></td>
+              <td>Less</td>
+            </tr>
+            <tr>
+              <td><code>&lt;=</code></td>
+              <td>Less or equals</td>
+            </tr>
+            <tr>
+              <td><code>~</code></td>
+              <td>Arithmetic Negation</td>
+            </tr>
+            <tr>
+              <td><code>+</code></td>
+              <td>Addition</td>
+            </tr>
+            <tr>
+              <td><code>-</code></td>
+              <td>Subtraction</td>
+            </tr>
+            <tr>
+              <td><code>*</code></td>
+              <td>Multiplication</td>
+            </tr>
+            <tr>
+              <td><code>/</code></td>
+              <td>Truncated Division</td>
+            </tr>
+            <tr>
+              <td><code>%</code></td>
+              <td>Truncated Remainder</td>
+            </tr>
+            <tr>
+              <td><code>|</code></td>
+              <td>Bitwise OR</td>
+            </tr>
+            <tr>
+              <td><code>&amp;</code></td>
+              <td>Bitwise AND</td>
+            </tr>
+            <tr>
+              <td><code>!</code></td>
+              <td>Bitwise NOT</td>
+            </tr>
+            <tr>
+              <td><code>^</code></td>
+              <td>Bitwise XOR</td>
+            </tr>
+            <tr>
+              <td><code>&lt;&lt;</code></td>
+              <td>Bitwise Left Shift</td>
+            </tr>
+            <tr>
+              <td><code>&gt;&gt;</code></td>
+              <td>Bitwise Right Shift</td>
+            </tr>
+            <tr>
+              <td><code>:</code></td>
+              <td>Type Annotation or Type Cast</td>
+            </tr>
+            <tr>
+              <td><code>[]</code></td>
+              <td>Procedure call or struct indexing</td>
+            </tr>
+            <tr>
+              <td><code>.</code></td>
+              <td>struct field offset (dot access)</td>
+            </tr>
+            <tr>
+              <td><code>-&gt;</code></td>
+              <td>struct field derefernce (arrow access)</td>
+            </tr>
+            <tr>
+              <td><code>@</code></td>
+              <td>dereference</td>
+            </tr>
+          </tbody>
+        </table>
+      </center>
+      <p>
+        The following caveats are important:
+      </p>
+      <ul dir="auto">
+        <li>If <code>a</code> is a pointer, then <code>a+b</code> and <code>a-b</code> are allowed only if <code>b</code> is numerical;</li>
+        <li><code>or</code> and <code>and</code> are <em>not short-circuited</em>, and operate only on <code>bool</code> types;</li>
+        <li>If <code>a</code> is of a numerical type <code>T</code>, then <code>a+b</code> is allowed only if <code>b</code> is also of type <code>T</code>,
+          this applies to all other arithmetical operations;
+        </li>
+        <li>Indexing with negative values is allowed, <code>a[i]</code> computes <code>a + i*sizeof[STRUCT]</code>,
+          and should accept any integer;
+        </li>
+        <li>The difference between type annotattion and cast is between a no-op and actual conversion.
+          Given <code>a:T</code>, if <code>a</code> is already of type <code>T</code>, nothing is done, while if <code>a</code> is of another type,
+          a cast is done;
+        </li>
+        <li>With unsigned integers casting a big integer type to a smaller integer type is allowed,
+          and should truncate the value accordingly, ie, copy only the least significant bits.
+        </li>
+        <li>Dereference asks for a type <code>a@T</code>, where <code>T</code> can be any type.</li>
+      </ul>
+      <p>
+        The following is a list of behaviours that are <b>implementation defined</b>,
+        each item also includes clues as to how the program may behave, but compilers
+        may choose to do as they please:
+      </p>
+      <ul dir="auto">
+        <li>Dereferencing a pointer that does not point to a valid object. It may segfault, or just retrieve garbage;</li>
+        <li>Casting a non-procedure to a procedure and performing a call. It may segfault or execute arbitrary code;</li>
+        <li>Dereferencing a type <code>T</code> from a pointer where <code>U</code> was stored. It may retrieve garbage;</li>
+        <li>Casting a big signed integer to a smaller signed integer. It may truncate the bits, without preserving sign, effectively creating garbage;</li>
+        <li>If <code>b</code> is zero and you perform a division or remainder, <code>a/b</code> or <code>a%b</code>. It is preferred that the program crashes with a signaling error;</li>
+        <li>If <code>b</code> is negative and you perform a shift <code>a&lt;&lt;b</code> or <code>a&gt;&gt;b</code>. It may use only the lower bits of <code>b</code>;</li>
+      </ul>
+      <p>
+        Logical operators are not short-circuited to avoid branches in expressions,
+        all expressions in Millipascal are linearly executed.
+      </p>
+      <p>
+        If <code>a->b</code>, <code>a@T</code> or <code>a</code> (local) occurs in the LHS of an assignment, then the
+        value is not evaluated directly, but is represented as a sort of <b>lvalue</b>,
+        and is the target of the assigment.
+      </p>
+      <p>
+        Indexing, dot and arrow accesses behave like syntax sugar,
+        given <code>a:T</code>, with <code>T</code> being a struct with a field <code>b:U</code>:
+      </p>
+      <ul dir="auto">
+        <li><code>a.b</code> can be translated to <code>a+T.b</code>;</li>
+        <li><code>a-&gt;b</code> can be translated to <code>(a+T.b)@U</code>;</li>
+        <li><code>a[i]</code> can be translated to <code>a+i*sizeof[T]</code>;</li>
+      </ul>
+    </section>
+    <section>
+      <h3 id="factors">Factors</h3>
+<pre><code>Factor = Name
+    | Literal
+    | NestedExpr
+    | Sizeof.
+NestedExpr = '(' Expr ')'.
+Literal = true | false | number | char.
+Name = id ['::' id].
+Sizeof = 'sizeof' '[' Type [DotAccess] ']'.</code></pre>
+      <p>
+        Factors represent the primary elements that are manipulated in expressons.
+      </p>
+      <p>
+        The literals <code>true</code> and <code>false</code> represent the two possible boolean values,
+        and have type <code>bool</code>.
+        The number literals have their respective type according to
+        the suffix, and are evaluated to the number they represent. 
+        A char literal is a particular kind of number literal that is of type <code>i8</code>,
+        and evaluates to the <b>ascii</b> value of that character.
+      </p>
+      <p>
+        A "Name" represents a global, local or external name. If it is a local,
+        the type of the expression is the declared type of that local, and it
+        evaluates to the value contained in that local.
+        If it is a global or external, it may refer to a data declaration, a struct,
+        a constant or a procedure.
+      </p>
+      <ul>
+       <li> If it refers to a data declaration the type is either <code>ptr</code> or
+        the type annotatted in the data declaration, it evaluetes to the address
+        of that declaration</li>
+       <li> If it refers to a procedure, the type is the inferred type of the procedure.
+        The expression evaluates to the address of the procedure, allowing you to call it,
+        or pass it around </li>
+       <li> If it refers to a struct, it may only be in the compound expression <code>STRUCT.FIELD</code>,
+        which has type <code>i32</code> and evaluates to the offset of that field </li>
+       <li> If it refers to a constant, it will have the type inferred or annotatted in that constant,
+        and will evaluate to the value of the constant. That value is expected to be evaluated
+        at compile time.</li>
+      </ul>
+      <p>
+        Of course, if the expression occurs in the LHS of an assignment, the local identifier
+        will be interpreted as something of a <b>lvalue</b>, and will be the target of the assignment,
+        instead of evaluated directly.
+      </p>
+      <ul>
+        <li><code>sizeof[data]</code>: evaluates to the <em>byte</em> size of that data declaration;</li>
+        <li><code>sizeof[struct]</code>: evaluates to the <em>byte</em> size of the struct;</li>
+        <li><code>sizeof[struct.field]</code>: evaluates to the <em>byte</em> size that field takes in the struct;</li>
+        <li><code>sizeof[T]</code>: evaluates to the <em>byte</em> size of the type <code>T</code>;</li>
+      </ul>
+      <p>
+        That is, <code>sizeof</code> always computes the <b>byte</b> size.
+      </p>
+    </section>
+    <section>
+      <h3 id="asm">Asm</h3>
+<pre><code>Asm = 'asm' 'begin' {AsmLine} 'end'.
+AsmLine = Label | Instruction.
+Label = '.' id ':'.
+Instruction = InstrName [OpList] ';'.
+InstrName = id.
+OpList = Op {',' Op} ','.
+Op = Name | Addressing | ConstOp | Literal.
+Addressing = '[' OpList ']' ['@' id].
+ConstOp = '{' Expr '}'.</code></pre>
+      <p>
+        Assembly blocks allows you to write assembly, interfacing with the
+        rest of the language almost seamlessly. They exist mostly to:
+      </p>
+      <ul>
+        <li>Allow you to write syscalls</li>
+        <li>Allow you to optimize code at the instruction level</li>
+        <li>Allow you to write SIMD code <b>(TBD)</b></li>
+      </ul>
+    </section>
+  </section>
+  <section>
+    <h2 id="asm">Asm Code</h2>
+    <section>
+      <h3 id="instr">Instructions</h3>
+        <p>
+          The compiler is not required to implement the full ISA specification,
+          and must warn of any unknown instructions.
+          In <code>mpc</code>, the following instructions are implemented:
+        </p>
+<pre><code>mov movsx movzx movsxd
+xor or and not shl shr sal sar
+cmp syscall call ret
+push pop
+jmp
+je jne
+jl jle jg jge
+jb jbe ja jae
+add sub neg idiv div
+sete setne
+setg setge setl setle
+seta setae setb setbe</code></pre>
+    </section>
+    <section>
+      <h3 id="regs">Registers</h3>
+      <p>
+        Registers follow the AMD convention, and ignores most cursed names from Intel:
+      </p>
+      <ul dir="auto">
+        <li>Quad-word registers: <code>r0</code>, <code>r1</code>, ..., <code>r15</code></li>
+        <li>Double-word registers: <code>r0d</code>, <code>r1d</code>, ..., <code>r15d</code></li>
+        <li>Word registers: <code>r0w</code>, <code>r1w</code>, ..., <code>r15w</code></li>
+        <li>Byte registers: <code>r0b</code>, <code>r1b</code>, ..., <code>r15b</code></li>
+        <li><code>rsp</code> = <code>r4</code></li>
+        <li><code>rbp</code> = <code>r5</code></li>
+        <li>Instruction pointer: <code>rip</code>.</li>
+      </ul>
+      <p>
+        The registers <code>rbp</code> and <code>rsp</code> are special because they hold, respectively,
+        the base pointer and the stack pointer. The base pointer is used in the 
+        <code>stack</code> CC to keep the activation record pointer (ARP).
+      </p>
+      <p>
+        The following table can be useful:
+      </p>
+      <center>
+        <table>
+          <thead>
+            <tr>
+              <th>Intel</th>
+              <th>AMD</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>rax</td>
+              <td>r0</td>
+            </tr>
+            <tr>
+              <td>rcx</td>
+              <td>r1</td>
+            </tr>
+            <tr>
+              <td>rdx</td>
+              <td>r2</td>
+            </tr>
+            <tr>
+              <td>rbx</td>
+              <td>r3</td>
+            </tr>
+            <tr>
+              <td>rsp</td>
+              <td>r4</td>
+            </tr>
+            <tr>
+              <td>rbp</td>
+              <td>r5</td>
+            </tr>
+            <tr>
+              <td>rsi</td>
+              <td>r6</td>
+            </tr>
+            <tr>
+              <td>rdi</td>
+              <td>r7</td>
+            </tr>
+            <tr>
+              <td>r8</td>
+              <td>r8</td>
+            </tr>
+            <tr>
+              <td>r9</td>
+              <td>r9</td>
+            </tr>
+            <tr>
+              <td>r10</td>
+              <td>r10</td>
+            </tr>
+            <tr>
+              <td>r11</td>
+              <td>r11</td>
+            </tr>
+            <tr>
+              <td>r12</td>
+              <td>r12</td>
+            </tr>
+            <tr>
+              <td>r13</td>
+              <td>r13</td>
+            </tr>
+            <tr>
+              <td>r14</td>
+              <td>r14</td>
+            </tr>
+            <tr>
+              <td>r15</td>
+              <td>r15</td>
+            </tr>
+          </tbody>
+        </table>
+      </center>
+    </section>
+    <section>
+      <h3 id="addressing">Addressing</h3>
+      <p>
+        Addressing can be done with square brackets and, in Intel's syntax, correspond directly
+        to <code>[r + offset]</code>:
+      </p>
+      <pre><code>mov r0, [r1, offset];</code></pre>
+      <p>
+        Addressing is only supported for immediate values. That is:
+      </p>
+<pre><code>  mov r0, [rbp, _arg0];
+  mov r1, [r13, {sizeof[i64]}];
+  mov r2, [r13, {STRUCT.FIELD}];</pre></code>
+      <p>
+        Addressing in the form of <code>[r0 + r1]</code> and <code>[r0 + r1 * 4]</code> are forbidden,
+        even though AMD64 allows it.
+      </p>
+    </section>
+    <section>
+      <h3 id="const-asm">Constant expressions</h3>
+      <p>
+        Constant expressions can be used inside asm blocks with curly brackets,
+        but they are purely numerical (as they are everywhere else).
+        For example, to load the size of a structure <code>B</code> in a register:
+      </p>
+      <pre><code>  mov r0, {sizeof[B]};</code></pre>
+      <p>
+        If the expression exceeds the maximum value expected in the instruction,
+        the compiler should raise an error.
+      </p>
+    </section>
+    <section>
+      <h3 id="globals-asm">Globals</h3>
+      <p>
+        Procedures and data declarations inside assembly blocks can be
+        used by name directly. Given <code>data M:B []</code>, we can pass the address
+        of <code>M</code> to a register:
+      </p>
+      <pre><code>  mov r0, M;</pre></code>
+      <p>
+        Similarly, with procedures, we can call them as it's normally done
+        in asm. Given a procedure <code>P</code>, we call it:
+      </p>
+      <pre><code>  call P;</pre></code>
+      <p>
+        All arguments are passed according to the calling convention of <code>P</code>,
+        and registers must be saved accordingly. 
+      </p>
+    </section>
+    <section>
+      <h3 id="labels-asm">Labels</h3>
+      <p>
+        Labels evaluate to the address of the following instruction, they can
+        be used directly as operands: 
+      </p>
+<pre><code>.L0:
+  mov r0, L0;
+  jmp L0;</code></pre>
+    </section>
+    <section>
+      <h3 id="names-asm">Names</h3>
+      <p>
+        There's a lot of new names in assembly, to make sure all identifiers are
+        correctly being used, they must be specified.
+      </p>
+      <ul>
+       <li>No arguments, variables or labels can have the same name as a register</li>
+       <li>No arguments, variables and labels can be of the form <code>_argN</code>, <code>_retN</code></li>
+       <li>Two Labels must not be identical</li>
+      </ul>
+      <p>
+        Scopes are: global, local, labels and reserved. Each identifier must be checked
+        if it is in a scope in order:
+      </p>
+      <ul>
+        <li>Reserved are special identifiers like registers and stack offsets, if a name
+        is not on this set, then it must be tested as a label</li>
+        <li> Labels can shadow locals and globals, and are tested second. If a name is not
+        a label, then it must be tested as a local</li>
+        <li> Locals can only shadow globals, and are tested after labels. If a name is not
+        a local, then it must be tested as a global</li>
+        <li> Globals are the last scope, if the name fails to be tested as a global,
+        the compiler should raise an error declaring that the name does not exist.</li>
+      </ul>
+    </section>
+    <section>
+      <h3 id="stack">Stack calling convention</h3>
+      <p>
+        When a procedure has CC <code>stack</code>, arguments and variables
+        used in instructions will evaluate to their respective offset.
+        That is: <code>mov r0, [rbp, arg]@dword</code> will eval to <code>mov r0, [rbp, offset]@dword</code>,
+        and <code>mov r0, arg</code> will evaluate to <code>mov r0, offset</code>.
+      </p>
+      <p>
+        Identifiers related to return addresses will also be available:
+        <code>_ret0</code>, <code>_ret1</code>, <code>_ret2</code>, etc.
+        So that you can <code>mov [rbp, _ret0]@dword, r0</code> to return <code>r0</code> as the
+        first return of the procedure.
+        You can, alternatively, use <code>_arg0</code>, <code>_arg1</code>, etc to access
+        the arguments, but it is preferred to use their actual names.
+      </p>
+      <p>
+        Variables will also evaluate to offsets, it may be wise instead to keep
+        the values in registers at all times and, when needed, spill to locals.
+      </p>
+    </section>
+  </section>
+  <section>
+    <h2 id="grammar">Full Grammar</h2>
+<pre><code>
+id = letterPlus {letterPlus | digit}.
+letterPlus = letter | '_'.
+letter = 'a'|'b'|'c'|'d'|'e'|'f'|'g'|'h'|'i'|'j'|
+         'k'|'l'|'m'|'n'|'o'|'p'|'q'|'r'|'s'|'t'|
+         'u'|'v'|'w'|'x'|'y'|'z'|'A'|'B'|'C'|'D'|
+         'E'|'F'|'G'|'H'|'I'|'J'|'K'|'L'|'M'|'N'|
+         'O'|'P'|'Q'|'R'|'S'|'T'|'U'|'V'|'W'|'X'|
+         'Y'|'Z'.
+digit  = '0'|'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'|'9'.
+
+number = decimal | hexadecimal | binary.
+decimal = digit {decDigits} [numEnding].
+hexadecimal = '0x' hexDigits {hexDigits} [numEnding].
+binary = '0b' binDigits {binDigits} [numEnding].
+decDigits = digit | '_'.
+hexDigits = digit | 'A'|'B'|'C'|'D'|'E'|'F'|
+                    'a'|'b'|'c'|'d'|'e'|'f'|'_'.
+binDigits = '0'|'1'|'_'.
+numEnding = 'p'|'s'|'ss'|'l'|'ll'|'us'|'uss'|'ul'|'ull'.
+
+escapes = '\\"' | '\\'' | '\\n' | '\\t' | '\\r'.
+string = '"' {ascii|escapes} '"'.
+char = '\'' (ascii|escapes) '\''.
+
+keywords =
+    'var'    | 'proc'   | 'begin'  | 'end'    |
+    'while'  | 'if'     | 'else'   | 'elseif' |
+    'or'     | 'and'    | 'not'    | 'data'   |
+    'i8'     | 'i16'    | 'i32'    | 'i64'    |
+    'u8'     | 'u16'    | 'u32'    | 'u64'    |
+    'bool'   | 'ptr'    | 'true'   | 'false'  |
+    'exit'   | 'import' | 'from'   | 'export' |
+    'const'  | 'sizeof' | 'return' | 'set'    |
+    'attr'   | 'as'     | 'all'    | 'struct' |
+    'void'   | 'asm'    | 'do'.
+
+ponctuation =
+    ','  | ':'   | '('  | ')'  | '['  | ']' |
+    '='  | '=='  | '!=' | '>'  | '>=' | '<' |
+    '<=' | '+'   | '-'  | '*'  | '/'  | '%' |
+    '-=' | '+='  | '*=' | '/=' | '%=' | '.' |
+    '@'  | '::'  | '~'  | '&'  | '|'  | '!' |
+    '^'  | '>>'  | '<<' | '->' | '?'  | '\''|
+    '"'  | '<>'  | '++' | '--'.
+
+basicType =
+    'i8' | 'i16' | 'i32' | 'i64' | 'ptr' | 'bool' |
+    'u8' | 'u16' | 'u32' | 'u64' | 'void'.
+
+Module = {Coupling} {AttSymbol}.
+
+Coupling = Import | FromImport | Export.
+
+Import = 'import' Items.
+FromImport = 'from' id 'import' Items.
+Export = 'export' Items.
+Items = (AliasList | 'all').
+AliasList = Alias {',' Alias} [','].
+Alias = id ['as' id].
+
+AttSymbol = [Attributes] Symbol [';'].
+Attributes = 'attr' IdList.
+IdList = id {',' id} [','].
+
+Symbol = Procedure | Data | Const | Struct.
+
+Const = 'const' (SingleConst|MultipleConst).
+SingleConst = id [Annot] '=' Expr.
+MultipleConst = 'begin' {SingleConst ';'} 'end'.
+
+Data = 'data' (SingleData|MultipleData).
+MultipleData = 'begin' {SingleData ';'} 'end'.
+SingleData =  id [Annot] (DExpr|string|Blob).
+Blob = '{' ExprList '}'.
+DExpr = '[' [Expr] ']'.
+
+Struct = 'struct' id [Size] 'begin' {Field ';'} 'end'.
+Size = '[' Expr ']'.
+Field = IdList Annot [Offset].
+Offset = '{' Expr '}'.
+
+Procedure = 'proc' id [CC] [Signature] [Vars] (Asm|Block).
+
+CC := '<' id '>'.
+
+Signature = DArgs [Rets].
+DArgs = '[' [DeclList] ']'.
+Vars = 'var' DeclList.
+
+Rets = TypeList.
+TypeList = Type {',' Type} [','].
+
+DeclList = Decl {',' Decl} [','].
+Decl = IdList Annot.
+Annot = ':' Type.
+
+Type = basicType | ProcType | Name.
+ProcType = 'proc' [CC] ProcTTList ProcTTList.
+ProcTTList = '[' [TypeList] ']'.
+
+Asm = 'asm' 'begin' {AsmLine} 'end'.
+AsmLine = Label | Instruction.
+Label = '.' id ':'.
+Instruction = InstrName [OpList] ';'.
+InstrName = id.
+OpList = Op {',' Op} ','.
+Op = Name | Addressing | ConstOp | Literal.
+Addressing = '[' OpList ']' ['@' id].
+ConstOp = '{' Expr '}'.
+
+Block = 'begin' {Statement} 'end'.
+
+Statement = If [';']
+      | While [';']
+      | DoWhile [';']
+      | Return ';'
+      | Set ';'
+      | Exit ';'
+      | Expr ';'.
+
+While = 'while' Expr Block.
+DoWhile = 'do' Block 'while' Expr.
+
+If   = 'if' Expr Block {ElseIf} [Else].
+ElseIf = 'elseif' Expr Block.
+Else = 'else' Block.
+
+Set = 'set' ExprList (Assign|IncDec).
+IncDec = '++' | '--'.
+Assign = assignOp Expr.
+assignOp = '=' | '-=' | '+=' | '/=' | '*=' | '%=' | '<>'.
+
+Return = 'return' [ExprList].
+Exit = 'exit' ['?'] [Expr].
+
+ExprList = Expr {',' Expr} [','].
+Expr = And {'or' And}.
+And = Comp {'and' Comp}.
+Comp = Sum {compOp Sum}.
+compOp = '==' | '!=' | '>' | '>=' | '<' | '<='.
+Sum = Mult {sumOp Mult}.
+sumOp = '+' | '-' | '|' | '^'.
+Mult = UnaryPrefix {multOp UnaryPrefix}.
+multOp = '*' | '/' | '%' | '&' | '<<' | '>>'.
+UnaryPrefix = {Prefix} UnarySuffix.
+UnarySuffix = Factor {Suffix}.
+
+Prefix = 'not' | '~' | '!'.
+Suffix = Conversion
+    | Deref
+    | Call
+    | DotAccess
+    | ArrowAccess.
+Conversion = Annot.
+Call = '[' [ExprList] ']'.
+Deref = '@' Type.
+DotAccess = '.' id.
+ArrowAccess = '->' id.
+
+Factor = Name
+    | Literal
+    | NestedExpr
+    | Sizeof.
+NestedExpr = '(' Expr ')'.
+Literal = true | false | number | char.
+Name = id ['::' id].
+Sizeof = 'sizeof' '[' Type [DotAccess] ']'.</code></pre>
+  </section>
+</div>
+</body>
+</html>
