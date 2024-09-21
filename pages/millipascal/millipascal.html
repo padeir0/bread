@@ -34,6 +34,7 @@
       <li><a href="#types">The type system</a></li>
       <li><a href="#type-of-types">The data structures for types</a></li>
       <li><a href="#typechecking">Type inference and type checking</a></li>
+      <li><a href="#consteval">Constant evaluation</a></li>
       <li><a href="#abstract-machine">The abstract machine</a></li>
       <li><a href="#hir">The High level Intermediate Representation (HIR)</a></li>
       <li><a href="#ast-hir">From AST to HIR</a></li>
@@ -47,6 +48,152 @@
   </div>
   <section>
     <h2 id="mp-briefly">A brief description of Millipascal</h2>
+    <p>
+      Millipascal is a simple imperative language.
+      It looks like Pascal, hence the name. Here's a hello-world program:
+    </p>
+<pre><code>
+from io import print
+
+data hello "Hello, World!\n"
+
+proc main
+begin
+  print[hello, sizeof[hello]];
+end
+</code></pre>
+    <p>
+      This program hardly shows anything about the language.
+      But what we can see is that:
+    </p>
+    <ul>
+      <li>There is some sort of module system</li>
+      <li>For some reason I didn't place the string literal inline with the print call</li>
+      <li>There is an entry point called <code>main</code></li>
+      <li>Functions appear to be called with square brackets</li>
+      <li>It looks like Pascal.</li>
+    </ul>
+    <p>
+      Millipascal is very minimalistic, the reason string literals are not directly
+      present in expressions is that they are only treated as blobs,
+      just like you would treat strings in assembly. The identifier
+      <code>hello</code> evaluates to a pointer (<code>ptr</code>),
+      completely untyped.
+    </p>
+    <p>
+      Besides pointers, we have the basic signed integers and
+      unsigned integers from 8 bits to 64 bits, and a boolean.
+      The boolean is not strictly necessary, but it helps when
+      we're trying to validate our compiler transformations (more
+      on that later).
+    </p>
+    <p>
+      Now, why would I choose square brackets over parenthesis
+      for function calls? That is: why <code>f[]</code> instead of
+      <code>f()</code>? There are three main reasons:
+    </p>
+    <ul>
+      <li>Parenthesis already have a job inside expressions: to disambiguate and group terms</li>
+      <li>It takes less finger acrobatics to type <code>[</code> than <code>(</code> </li>
+      <li>I find it prettier.</li>
+    </ul>
+    <p>
+      After you get used to this call syntax, it grows on you.
+      Initially it was a decision based purely to make the grammar
+      more robust, then i started seeing other advantages.
+    </p>
+    <p>
+      Now, if you're familiar with how <code>print</code> is implemented
+      in other languages, you know how weird our software stack
+      can get. In millipascal it is not much better, here's
+      the only assembly procedure I ever got working in the language:
+    </p>
+
+<pre><code>export print
+
+const begin
+    SYS_WRITE = 1;
+    STDOUT = 1;
+end
+
+proc print&lt;stack&gt;[p:ptr, size:i32] i64
+asm
+begin
+    push rbp;
+    mov rbp, rsp;
+
+    mov r0, {SYS_WRITE};
+    mov r2d, [rbp, size]@dword;
+    mov r6, [rbp, p]@qword;
+    mov r7, {STDOUT};
+    syscall;
+
+    mov [rbp, _ret0]@qword, r0;
+    mov rsp, rbp;
+    pop rbp;
+    ret;
+end</code></pre>
+
+    <p>
+      This directly implements the write syscall on linux for amd64.
+      Lot's more questions may be raised about this piece of code.
+      The <code>export print</code> is
+      how we make names public to other modules.
+      When you see <code>&lt;stack&gt;</code>, this is specifying
+      the ABI the procedure will use. Only one ABI was ever implemented.
+    </p>
+    <p>
+      If by now you haven't realised yet, this project was never finished.
+      It is functional, and I've even wrote a arbitrary precision
+      number library for the language, but some features never got fully
+      developed. The support for multiple ABIs exist, but only one ABI
+      was ever implemented. The support for ASM procedures exist, but
+      only one procedure got throughly used and tested. This is what
+      happens when projects grow out of proportion.
+    </p>
+    <p>
+      The following procedure converts a buffer to uppercase.
+      This one is much more interesting, it shows that the language
+      has support for first class procedures, and that global symbols
+      can be declared out of order.
+    </p>
+<pre><code>from io import print
+
+data buff "am i uppercase yet?\n"
+
+proc main
+begin
+  byte_map[buff, sizeof[buff], upper_case];
+  print[buff, sizeof[buff]];
+end
+
+proc byte_map[b:ptr, bsize:i32, op:proc[i8][i8]]
+var i:i32
+begin
+  set i = 0;
+  while i &lt; bsize begin
+    set (b+i)@i8 = op[(b+i)@i8];
+    set i += 1;
+  end
+end
+
+proc upper_case[a:i8] i8
+begin
+  if a &gt;= 'a' and a &lt;= 'z' begin
+    return a - 32ss;
+  end
+  return a;
+end
+</code></pre>
+  <p>
+    Here, <code>(b+1)@i8</code> is a pointer offset followed
+    by a dereference. It reads
+    "take b, add 1 and read an <code>i8</code> from that address".
+    There are other ways to do this, in fact, the language has
+    support for indexing, but it requires introducing the
+    semantics behind <code>struct</code> (it's different from C,
+    much to your dismay).
+  </p>
   </section>
   <section>
     <h2 id="mpc-briefly">The overall compiler architecture</h2>
@@ -77,6 +224,9 @@
   </section>
   <section>
     <h2 id="typechecking">Type inference and type checking</h2>
+  </section>
+  <section>
+    <h2 id="consteval">Constant evaluation</h2>
   </section>
   <section>
     <h2 id="abstract-machine">The abstract machine</h2>
