@@ -1,7 +1,7 @@
 <html>
 <head>
-  <link rel="stylesheet" href="../../style.css">
   <link rel="stylesheet" href="../../normalize.css">
+  <link rel="stylesheet" href="../../style.css">
   <link rel="icon" href="../../images/bread.png">
   <title>millipascal spec</title>
 </head>
@@ -521,15 +521,15 @@ Else = 'else' Block.</code></pre>
 DoWhile = 'do' Block 'while' Expr.</code></pre>
       <p>
         There are only two loop constructs, only one would suffice,
-        but the other is included for simmetry.
+        but the other is included for symmetry.
       </p>
       <p>
-        While loops execute the condition expression first, if it is true, the
+        <b>while</b> loops execute the condition expression first, if it is true, the
         block is executed and returns back to check the condition, if it is false,
         it continues to the next statement.
       </p>
       <p>
-        Do-while loops execute the block first, then check the condition,
+        <b>do-while</b> loops execute the block first, then check the condition,
         looping back if true, continuing if false.
       </p>
     </section>
@@ -556,7 +556,7 @@ Exit = 'exit' ['?'] [Expr].</code></pre>
         Exit statements may optionally include a interrogation mark,
         by writting <code>exit?;</code>, the program should unwind the stack
         trace and print it before terminating, this is used mostly
-        for debugging, and should be turned off in "release" builds.
+        for debugging, and should be turned off in "release" builds. <b>(TBD)</b>
       </p>
     </section>
     <section>
@@ -617,7 +617,7 @@ assignOp = '=' | '-=' | '+=' | '/=' | '*=' | '%=' | '&lt;&gt;'.</code></pre>
         Arithmetical operators (<code>-=</code>, <code>+=</code>, <code>/=</code>, <code>*=</code> and <code>%=</code>)
         are included for the sake of brevity, and because they fit
         marvelously with two and three-address instructions.
-        They work the same as <code>set LHS = LHS <op> RHS;</code>,
+        They work the same as <code>set LHS = LHS &lt;op&gt; RHS;</code>,
         but the LHS is evaluated only once.
       </p>
       <p>

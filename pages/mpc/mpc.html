@@ -1,7 +1,7 @@
 <html>
 <head>
-  <link rel="stylesheet" href="../../style.css">
   <link rel="stylesheet" href="../../normalize.css">
+  <link rel="stylesheet" href="../../style.css">
   <link rel="icon" href="../../images/bread.png">
   <title>mpc</title>
 </head>
@@ -20,6 +20,10 @@
       it explains on a high level how each component of the compiler works,
       and serves as resource for other people who are trying to solve
       similar problems as i did.
+    </p>
+    <p>
+      An additional resource to this document is the
+      <a href="../millipascal-spec/spec.html">millipascal specification</a>.
     </p>
   </div>
   <div class="summary">
@@ -107,7 +111,7 @@ end
       Now, if you're familiar with how <code>print</code> is implemented
       in other languages, you know how weird our software stack
       can get. In millipascal it is not much better, here's
-      the only assembly procedure I ever got working in the language:
+      one of the only assembly procedures I ever got working in the language:
     </p>
 
 <pre><code>export print
@@ -149,7 +153,7 @@ end</code></pre>
       number library for the language, but some features never got fully
       developed. The support for multiple ABIs exist, but only one ABI
       was ever implemented. The support for ASM procedures exist, but
-      only one procedure got throughly used and tested. This is what
+      only few procedures got throughly used and tested. This is what
       happens when projects grow out of proportion.
     </p>
     <p>
@@ -194,6 +198,92 @@ end
     support for indexing, but it requires introducing the
     semantics behind <code>struct</code> (it's different from C,
     much to your dismay).
+  </p>
+  <p>
+    To be more precise, structs in millipascal are only syntax sugar
+    for pointers, they are not values per se, only compile-time
+    metadata for pointers.
+    Here's some code that uses structs to benefit from the use of
+    the indexing syntax:
+  </p>
+<pre><code>from ioutil import put_int, put_char
+
+struct I32A begin
+    num:i32;
+end
+
+# ~ in Millipascal is the unary minus (arithmetical negation)
+data my_ints:I32A {
+    5, ~10, 2, 50, ~9, 65, 0
+}
+const my_ints_length = sizeof[my_ints]/sizeof[I32A];
+
+proc main
+begin
+    print_ints[my_ints, my_ints_length];
+    insertion_sort[my_ints, my_ints_length];
+    print_ints[my_ints, my_ints_length];
+end
+
+proc insertion_sort[array:I32A, length:i32]
+var i, j:i32
+begin
+    set i = 1;
+    while i &lt length begin
+        set j = i;
+        while j &gt; 0 and
+              array[j-1]-&gt;num &gt; array[j]-&gt;num begin
+            set array[j]-&gt;num &lt&gt; array[j-1]-&gt;num;
+            set j -= 1;
+        end
+        set i += 1;
+    end
+end
+
+proc print_ints[array:I32A, length:i32]
+var i:i32
+begin
+    set i = 0;
+    while i &lt length begin
+        put_int[array[i]-&gt;num:i64];
+        put_char[' '];
+        set i += 1;
+    end
+    put_char['\n'];
+end</code></pre>
+  <p>
+    It may seem confusing, but <code>array[i]</code> is only
+    syntax sugar for <code>array+(i * sizeof[I32A])</code>.
+    The <code>-&gt;</code> operator performs a dereference, just like in
+    C. It is sugar for <code>(pointer+offset)@type</code>, in this particular case,
+    the offset is zero, so the expression <code>array[i]-&gt;num</code>
+    is sugar for:
+  </p>
+  <pre><code>(array+(i * sizeof[I32A]))@i32</code></pre>
+  <p>
+    Structs are a bit more powerful than that, we're able to specify
+    the offsets of fields, and even have negative offsets. This may
+    seem silly, but i implemented that already thinking of a use-case:
+    storing metadata about an object.
+  </p>
+<pre><code># object header
+struct Obj [sizeof[i64]] begin
+    Size:i64 {~sizeof[i64]};
+end</code></pre>
+  <p>
+    This <code>Obj</code> struct is used inside the
+    <a href="https://github.com/padeir0/millipascal/blob/master/test_suite/stdlib/flalloc.mp">flalloc.mp</a>
+    allocator
+    to retrieve the size of objects that come from user code:
+  </p>
+  <pre><code>set size = (p:Obj)->Size;</code></pre>
+  <p>
+    So far this is only a taste of the weird quirks of the language,
+    a few more will crop up on the way, but now you know what rabbit
+    hole you're getting into. If it is not clear how some mechanism
+    of the language works, a <a href="../millipascal-spec/spec.html">specification</a> is available. If even
+    then something seems wrong, please feel free to
+    <a href="https://github.com/padeir0/bread/issues">raise an issue</a>.
   </p>
   </section>
   <section>

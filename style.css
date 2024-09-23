@@ -56,16 +56,11 @@ h1, h2, h3 {
   height: fit-content;
   padding: 1em;
   margin: 0 0 3em 0;
-  border: 1px solid black;
-  border-radius: 2px;
+  border-bottom: 1px solid black;
 }
 
 .header a {
   padding: 0 2em 0 2em;
-}
-
-.header img {
-  height: 1em;
 }
 
 p {
