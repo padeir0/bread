@@ -128,27 +128,18 @@ table th, td {
 }
 
 .img-container {
+  text-align: center;
+  justify-content: center;
   max-width: 90%;
   height: auto;
   overflow: hidden;
 }
 
 .image-container img {
+  justify-content: center;
   max-width: 100%;
   height: auto;
   display: block;
-}
-
-.img-center {
-  justify-content: center;
-}
-
-.img-left {
-  justify-content: left;
-}
-
-.img-right {
-  justify-content: right;
 }
 
 .img-small img {

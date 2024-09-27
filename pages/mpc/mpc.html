@@ -41,12 +41,12 @@
       <li><a href="#typechecking">Type inference and type checking</a></li>
       <li><a href="#consteval">Constant evaluation</a></li>
       <li><a href="#abstract-machine">The abstract machine</a></li>
-      <li><a href="#hir">The High level Intermediate Representation (HIR)</a></li>
-      <li><a href="#ast-hir">From AST to HIR</a></li>
+      <li><a href="#hir">Padeir0's Intermediate Representation (PIR)</a></li>
+      <li><a href="#ast-hir">From AST to PIR</a></li>
       <li><a href="#hir-errors">Checking proper returns</a></li>
-      <li><a href="#hir-validation">HIR validation</a></li>
+      <li><a href="#hir-validation">PIR validation</a></li>
       <li><a href="#mir">The Middle-level Intermediate Representation (MIR)</a></li>
-      <li><a href="#hir-mir">From HIR to MIR (register allocation)</a></li>
+      <li><a href="#hir-mir">From PIR to MIR (register allocation)</a></li>
       <li><a href="#mir-fasm">From MIR to FASM</a></li>
       <li><a href="#end">The End</a></li>
     </ol>
@@ -206,13 +206,15 @@ end
     Here's some code that uses structs to benefit from the use of
     the indexing syntax:
   </p>
+  <p>
+    (Note that <code>~</code> is the unary minus in Millipascal).
+  </p>
 <pre><code>from ioutil import put_int, put_char
 
 struct I32A begin
     num:i32;
 end
 
-# ~ in Millipascal is the unary minus (arithmetical negation)
 data my_ints:I32A {
     5, ~10, 2, 50, ~9, 65, 0
 }
@@ -288,6 +290,57 @@ end</code></pre>
   </section>
   <section>
     <h2 id="mpc-briefly">The overall compiler architecture</h2>
+    <p>
+      The compiler is a monolithic 15kloc project separated into varios modules,
+      it generates FASM assembly and depends on FASM to generate ELF files.
+    </p>
+    <div class="img-container">
+      <img src="./images/arch/full-compiler.svg" alt="overall">
+    </div>
+    <p>
+      Internally, the compiler is separated into frontend and backend.
+      The frontend is aware of how the language syntax works, and
+      transforms the higher level, syntax-oriented representation of source
+      into a semantic-oriented intermediate representation called PIR.
+      The backend is only aware of the minute semantics of the intermediate
+      representation, having only to understand the underlying abstract machine.
+      The backend transforms PIR into lower representations and emits textual assembly.
+    </p>
+    <p>
+      The assembly procedures are directly transformed to the last representation
+      the compiler has of the code: ASM. ASM is a in-memory
+      representation of assembly code and, in the diagrams, is not the same
+      as the "assembly" outputs. Don't worry too much about the nuances
+      of each representation now, these will be explained in detail later.
+    </p>
+    <div class="img-container">
+      <img src="./images/arch/mpc-only.svg" alt="mpc only">
+    </div>
+    <p>
+      <i>PIR</i> is a high-level representation of the semantics of millipascal,
+      it is quite different from the syntax tree of the first stages.
+      The frontend is also composed of several stages to transform 
+      millipascal source into <i>PIR</i>.
+    </p>
+    <div class="img-container">
+      <img src="./images/arch/frontend.svg" alt="frontend">
+    </div>
+    <p>
+      Stage 0 is concerned in resolving all dependencies and all types.
+      It extracts all necessary information from the source
+      so that the stage 1 is able
+      to properly transform the <i>module</i> representation
+      into <i>PIR</i>.
+    </p>
+    <div class="img-container">
+      <img src="./images/arch/frontend_part1.svg" alt="frontend stage 0">
+    </div>
+    <div class="img-container">
+      <img src="./images/arch/frontend_part2.svg" alt="frontend stage 1">
+    </div>
+    <div class="img-container">
+      <img src="./images/arch/backend.svg" alt="backend">
+    </div>
   </section>
   <section>
     <h2 id="ast">The abstract syntax tree (AST)</h2>
@@ -323,22 +376,22 @@ end</code></pre>
     <h2 id="abstract-machine">The abstract machine</h2>
   </section>
   <section>
-    <h2 id="hir">The High level Intermediate Representation (HIR)</h2>
+    <h2 id="hir">The Padeir0's Intermediate Representation (PIR)</h2>
   </section>
   <section>
-    <h2 id="ast-hir">From AST to HIR</h2>
+    <h2 id="ast-hir">From AST to PIR</h2>
   </section>
   <section>
     <h2 id="hir-errors">Checking proper returns</h2>
   </section>
   <section>
-    <h2 id="hir-validation">HIR validation</h2>
+    <h2 id="hir-validation">PIR validation</h2>
   </section>
   <section>
     <h2 id="mir">The Middle-level Intermediate Representation (MIR)</h2>
   </section>
   <section>
-    <h2 id="hir-mir">From HIR to MIR (register allocation)</h2>
+    <h2 id="hir-mir">From PIR to MIR (register allocation)</h2>
   </section>
   <section>
     <h2 id="mir-fasm">From MIR to FASM</h2>

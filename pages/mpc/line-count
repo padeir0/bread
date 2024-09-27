@@ -1,0 +1,49 @@
+.                      15756
+├── asmproc            298
+├── backend0           3603
+│   ├── gen            1009
+│   ├── mir            1411
+│   │   ├── checker    852
+│   │   ├── class      33
+│   │   ├── flowkind   26
+│   │   ├── instrkind  100
+│   │   ├── util       60
+│   │   └── mir.go     340
+│   └── resalloc       1183
+├── constexpr          546
+├── core               3420
+│   ├── asm            644
+│   │   ├── instrkind  266
+│   │   ├── util       247
+│   │   └── asm.go     131
+│   ├── cc             51
+│   │   └── stack      51
+│   ├── errorkind      164
+│   ├── module         759
+│   │   ├── globalkind 29
+│   │   ├── lexkind    287
+│   │   ├── localkind  9
+│   │   └── module.go  434
+│   ├── pir            1123
+│   │   ├── checker    545
+│   │   ├── class      47
+│   │   ├── flowkind   26
+│   │   ├── instrkind  93
+│   │   ├── util       68
+│   │   └── pir.go     344
+│   ├── severity       28
+│   ├── strbuilder     48
+│   ├── types          409
+│   ├── util           53
+│   └── core.go        141
+├── fasm               224
+├── format             490
+├── lexer              761
+├── linearization      1025
+├── messages           297
+├── parser             1870
+├── pipelines          204
+├── resolution         1058
+├── testing            191
+├── typechecker        1570
+└── main.go            199
