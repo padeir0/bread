@@ -127,7 +127,8 @@ table th, td {
   text-align: center;
 }
 
-.img-container {
+figure {
+  display: block;
   text-align: center;
   justify-content: center;
   max-width: 90%;
@@ -135,11 +136,12 @@ table th, td {
   overflow: hidden;
 }
 
-.image-container img {
+figure img {
+  margin: 0px auto;
+  text-align: center;
   justify-content: center;
   max-width: 100%;
   height: auto;
-  display: block;
 }
 
 .img-small img {

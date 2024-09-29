@@ -22,14 +22,16 @@
       similar problems as i did.
     </p>
     <p>
-      An additional resource to this document is the
-      <a href="../millipascal-spec/spec.html">millipascal specification</a>.
+      Additional resources to this document are
+      <a href="../millipascal-spec/spec.html">the language specification</a> and
+      <a href="https://github.com/padeir0/millipascal">compiler source</a>.
     </p>
   </div>
   <div class="summary">
+    <h2>Contents</h2>
     <ol>
       <li><a href="#mp-briefly">A brief description of Millipascal</a></li>
-      <li><a href="#mpc-briefly">The overall compiler architecture</a></li>
+      <li><a href="#comparch">The overall compiler architecture</a></li>
       <li><a href="#ast">The abstract syntax tree (AST)</a></li>
       <li><a href="#lex-parser">Lexer and parser</a></li>
       <li><a href="#files">Files and modules</a></li>
@@ -190,25 +192,25 @@ begin
   return a;
 end
 </code></pre>
-  <p>
-    Here, <code>(b+1)@i8</code> is a pointer offset followed
-    by a dereference. It reads
-    "take b, add 1 and read an <code>i8</code> from that address".
-    There are other ways to do this, in fact, the language has
-    support for indexing, but it requires introducing the
-    semantics behind <code>struct</code> (it's different from C,
-    much to your dismay).
-  </p>
-  <p>
-    To be more precise, structs in millipascal are only syntax sugar
-    for pointers, they are not values per se, only compile-time
-    metadata for pointers.
-    Here's some code that uses structs to benefit from the use of
-    the indexing syntax:
-  </p>
-  <p>
-    (Note that <code>~</code> is the unary minus in Millipascal).
-  </p>
+    <p>
+      Here, <code>(b+1)@i8</code> is a pointer offset followed
+      by a dereference. It reads
+      "take b, add 1 and read an <code>i8</code> from that address".
+      There are other ways to do this, in fact, the language has
+      support for indexing, but it requires introducing the
+      semantics behind <code>struct</code> (it's different from C,
+      much to your dismay).
+    </p>
+    <p>
+      To be more precise, structs in millipascal are only syntax sugar
+      for pointers, they are not values per se, only compile-time
+      metadata for pointers.
+      Here's some code that uses structs to benefit from the use of
+      the indexing syntax:
+    </p>
+    <p>
+      (Note that <code>~</code> is the unary minus in Millipascal).
+    </p>
 <pre><code>from ioutil import put_int, put_char
 
 struct I32A begin
@@ -253,50 +255,116 @@ begin
     end
     put_char['\n'];
 end</code></pre>
-  <p>
-    It may seem confusing, but <code>array[i]</code> is only
-    syntax sugar for <code>array+(i * sizeof[I32A])</code>.
-    The <code>-&gt;</code> operator performs a dereference, just like in
-    C. It is sugar for <code>(pointer+offset)@type</code>, in this particular case,
-    the offset is zero, so the expression <code>array[i]-&gt;num</code>
-    is sugar for:
-  </p>
-  <pre><code>(array+(i * sizeof[I32A]))@i32</code></pre>
-  <p>
-    Structs are a bit more powerful than that, we're able to specify
-    the offsets of fields, and even have negative offsets. This may
-    seem silly, but i implemented that already thinking of a use-case:
-    storing metadata about an object.
-  </p>
+    <p>
+      It may seem confusing, but <code>array[i]</code> is only
+      syntax sugar for <code>array+(i * sizeof[I32A])</code>.
+      The <code>-&gt;</code> operator performs a dereference, just like in
+      C. It is sugar for <code>(pointer+offset)@type</code>, in this particular case,
+      the offset is zero, so the expression <code>array[i]-&gt;num</code>
+      is sugar for:
+    </p>
+    <pre><code>(array+(i * sizeof[I32A]))@i32</code></pre>
+    <p>
+      Structs are a bit more powerful than that, we're able to specify
+      the offsets of fields, and even have negative offsets. This may
+      seem silly, but i implemented that already thinking of a use-case:
+      storing metadata about an object.
+    </p>
 <pre><code># object header
 struct Obj [sizeof[i64]] begin
     Size:i64 {~sizeof[i64]};
 end</code></pre>
-  <p>
-    This <code>Obj</code> struct is used inside the
-    <a href="https://github.com/padeir0/millipascal/blob/master/test_suite/stdlib/flalloc.mp">flalloc.mp</a>
-    allocator
-    to retrieve the size of objects that come from user code:
-  </p>
-  <pre><code>set size = (p:Obj)->Size;</code></pre>
-  <p>
-    So far this is only a taste of the weird quirks of the language,
-    a few more will crop up on the way, but now you know what rabbit
-    hole you're getting into. If it is not clear how some mechanism
-    of the language works, a <a href="../millipascal-spec/spec.html">specification</a> is available. If even
-    then something seems wrong, please feel free to
-    <a href="https://github.com/padeir0/bread/issues">raise an issue</a>.
-  </p>
+    <p>
+      This <code>Obj</code> struct is used inside the
+      <a href="https://github.com/padeir0/millipascal/blob/master/test_suite/stdlib/flalloc.mp">flalloc.mp</a>
+      allocator
+      to retrieve the size of objects that come from user code:
+    </p>
+    <pre><code>set size = (p:Obj)->Size;</code></pre>
+    <p>
+      So far this is only a taste of the weird quirks of the language,
+      a few more will crop up on the way, but now you know what rabbit
+      hole you're getting into. If it is not clear how some mechanism
+      of the language works, a <a href="../millipascal-spec/spec.html">specification</a> is available. If even
+      then something seems wrong, please feel free to
+      <a href="https://github.com/padeir0/bread/issues">raise an issue</a>.
+    </p>
   </section>
   <section>
-    <h2 id="mpc-briefly">The overall compiler architecture</h2>
+    <h2 id="comparch">The overall compiler architecture</h2>
     <p>
       The compiler is a monolithic 15kloc project separated into varios modules,
       it generates FASM assembly and depends on FASM to generate ELF files.
     </p>
-    <div class="img-container">
+    <figure>
       <img src="./images/arch/full-compiler.svg" alt="overall">
-    </div>
+      <figcaption>program overview</figcaption>
+    </figure>
+    <p>
+      Names of most stages here mirror the names of folders in
+      the source. Here's a quick summary of the repository and
+      the respective total line count of each directory.
+    </p>
+    <pre><code>src               15756
+├── asmproc       298
+├── backend0      3603
+│   ├── gen       1009
+│   ├── mir       1411
+│   └── resalloc  1183
+├── constexpr     546
+├── core          3420
+├── fasm          224
+├── format        490
+├── lexer         761
+├── linearization 1025
+├── messages      297
+├── parser        1870
+├── pipelines     204
+├── resolution    1058
+├── testing       191
+├── typechecker   1570
+└── main.go       199</code></pre>
+    <p>
+      This gives you an idea of how complex each compiler phase is,
+      for example, lexing is rather simple, thus
+      the line count of <code>lexer</code> is smaller than a more complicated stage
+      like the <code>typechecker</code>.
+    </p>
+    <p>
+      The file that describes most of the diagrams seen here
+      is the <code>pipelines/pipelines.go</code> file. It contains
+      the code that glues all compiler phases together, it may
+      be helpfull to consult this file while reading this section.
+    </p>
+    <p>
+      The <code>core</code> folder contains all public data structures
+      used throughout the compiler, a quick summary follows.
+    </p>
+<pre><code>core           3420
+├── asm        644
+├── cc         51
+├── errorkind  164
+├── module     759
+├── pir        1123
+├── severity   28
+├── strbuilder 48
+├── types      409
+├── util       53
+└── core.go    141</pre></code>
+    <p>
+      Here, the most important data structures are:
+    </p>
+    <ul>
+      <li><code>asm</code> which is a in-memory representation of assembly code, henceforth refered to as ASM</li>
+      <li><code>module</code> which represents the source using an abstract syntax tree (AST) and represents modules with a dependency graph</li>
+      <li><code>types</code> which represents the structure of types, including structs</li>
+      <li><code>pir</code> which is the main intermediate representation of source, based on a control flow graph (CFG)</li>
+    </ul>
+    <p>
+      The file <code>core.go</code> contains the <code>Error</code> data structure
+      that is used almost everywhere in the source (hence it is the most core
+      of the core data structures).
+    </p>
     <p>
       Internally, the compiler is separated into frontend and backend.
       The frontend is aware of how the language syntax works, and
@@ -313,34 +381,118 @@ end</code></pre>
       as the "assembly" outputs. Don't worry too much about the nuances
       of each representation now, these will be explained in detail later.
     </p>
-    <div class="img-container">
+    <figure>
       <img src="./images/arch/mpc-only.svg" alt="mpc only">
-    </div>
+      <figcaption>mpc only</figcaption>
+    </figure>
     <p>
-      <i>PIR</i> is a high-level representation of the semantics of millipascal,
+      PIR is a high-level representation of the semantics of millipascal,
       it is quite different from the syntax tree of the first stages.
       The frontend is also composed of several stages to transform 
-      millipascal source into <i>PIR</i>.
+      millipascal source into PIR.
     </p>
-    <div class="img-container">
+    <figure>
       <img src="./images/arch/frontend.svg" alt="frontend">
-    </div>
+      <figcaption>frontend</figcaption>
+    </figure>
     <p>
       Stage 0 is concerned in resolving all dependencies and all types.
       It extracts all necessary information from the source
       so that the stage 1 is able
       to properly transform the <i>module</i> representation
-      into <i>PIR</i>.
+      into PIR.
     </p>
-    <div class="img-container">
-      <img src="./images/arch/frontend_part1.svg" alt="frontend stage 0">
-    </div>
-    <div class="img-container">
-      <img src="./images/arch/frontend_part2.svg" alt="frontend stage 1">
-    </div>
-    <div class="img-container">
+    <p>
+      Most compiler errors will be emitted during stage 0, the only
+      few errors coming out of stage 1 are related to control flow
+      and entry points.
+    </p>
+    <figure>
+      <img src="./images/arch/frontend_stage0.svg" alt="frontend stage 0">
+      <figcaption>stage 0</figcaption>
+    </figure>
+    <p>
+      Stage 0 starts with the resolution phase, it finds
+      all dependencies, builds the dependency graph and checks all
+      global declarations for name usage. It creates the <i>module</i>
+      data structure, which contains dependencies, the abstract syntax tree,
+      and space to place information collected in other phases. If everything is well with name resolution and no errors are found,
+      then execution proceeds to the typechecking phase.
+    </p>
+    <p>
+      Typechecking is the first phase that deals with types. It infers
+      and checks types at the same time and fills the syntax tree
+      with the types of each expression. Besides types, it also checks
+      for other semantic problems like if assignments are well formed
+      or if a procedure with multiple returns is being used in an
+      expression. If no problems are found in typechecking,
+      execution proceeds to the <i>constexpr</i> phase.
+    </p>
+    <p>
+      The constant evaluation phase (<i>constexpr</i>) is a small
+      pass that evaluates constants in global symbols and
+      <code>sizeof</code> expressions using arbitrary precision
+      arithmetic (bignums). It has to run after all types are known
+      so that numbers can be constrained to their fixed sizes.
+      After <i>constexpr</i>,
+      constants are just numbers, and incur no runtime overhead.
+    </p>
+    <figure>
+      <img src="./images/arch/frontend_stage1.svg" alt="frontend stage 1">
+      <figcaption>stage 1</figcaption>
+    </figure>
+    <p>
+      The stage 1 starts with the <i>asmproc</i> phase, which parses
+      assembly procedures into the ASM representation. It needs to run
+      in this exact place in the pipeline to use evaluated constants,
+      and to avoid keeping syntax trees through the next phase. It also
+      checks for semantic errors like invalid labeling or invalid
+      instructions.
+    </p>
+    <p>
+      The <i>linearization</i> phase is a very complicated phase
+      that transforms the whole source, including all dependencies,
+      into a single PIR object. It mainly works on top the AST
+      to transform it into a CFG. The only error this phase emits
+      is regarding missing returns in procedures.
+    </p>
+    <p>
+      Lastly, after PIR is built, a phase checks if the representation
+      is well formed. This phase is located in <code>core/pir/checker</code>
+      as it is part of the semantics of the data structure.
+    </p>
+    <figure>
       <img src="./images/arch/backend.svg" alt="backend">
-    </div>
+      <figcaption>backend</figcaption>
+    </figure>
+    <p>
+      The backend is where most of my tears have been shed. It starts by
+      transforming PIR into a lower level representation called MIR,
+      this is the job of <i>regalloc</i> (register allocator).
+      This representation cares about where things are stored and
+      implements a simplified version of what will be written in
+      assembly.
+    </p>
+    <p>
+      After MIR is created, a validation phase performs abstract
+      interpretation of the code to check if everything is well-formed.
+      This validation is crucial and often caught a lot of bugs in
+      the register allocator, bugs that previously required chasing
+      segmentation faults.
+    </p>
+    <p>
+      If MIR is well-formed, the next stage is to transform it
+      into ASM, joining it together with the assembly procedures
+      generated in the <i>asmproc</i> phase. Transforming
+      MIR into ASM requires some workarounds related to
+      weird quirks of the amd64 architecture, quirks i only got
+      to know after many segfaults.
+    </p>
+    <p>
+      Finally, the last phase transforms ASM into textual assembly
+      following the syntax rules of the FASM assembler. This is rather
+      simple and is almost an one-to-one translation.
+    </p>
   </section>
   <section>
     <h2 id="ast">The abstract syntax tree (AST)</h2>
