@@ -113,7 +113,7 @@ end
       Now, if you're familiar with how <code>print</code> is implemented
       in other languages, you know how weird our software stack
       can get. In millipascal it is not much better, here's
-      one of the only assembly procedures I ever got working in the language:
+      one of the few assembly procedures I ever got working in the language:
     </p>
 
 <pre><code>export print
@@ -193,9 +193,9 @@ begin
 end
 </code></pre>
     <p>
-      Here, <code>(b+1)@i8</code> is a pointer offset followed
+      Here, <code>(b+i)@i8</code> is a pointer offset followed
       by a dereference. It reads
-      "take b, add 1 and read an <code>i8</code> from that address".
+      "take b, add i and read an <code>i8</code> from that address".
       There are other ways to do this, in fact, the language has
       support for indexing, but it requires introducing the
       semantics behind <code>struct</code> (it's different from C,
@@ -496,6 +496,100 @@ end</code></pre>
   </section>
   <section>
     <h2 id="ast">The abstract syntax tree (AST)</h2>
+    <p>
+      The abstract syntax tree represents the source code using an hierarchical data structure.
+      The compiler can output AST by calling it with <code>mpc --ast file.mp</code>. For
+      example, consider the following code.
+    </p>
+<pre><code>proc fact[n:i32] i32
+begin
+	if n == 0 begin
+		return 1;
+	end
+	return n * fact[n-1];
+end</code></pre>
+    <p>
+      Omitting the topmost node, becomes the following mess:
+    </p>
+<pre><code>└─>{proc, 'proc':nil, 0:0 to 6:3}
+    └─>{identifier, 'fact':nil, 0:5 to 0:9}
+    └─>{parameters, '':nil, 0:10 to 0:15}
+        └─>{:, ':':nil, 0:10 to 0:15}
+            └─>{id list, '':nil, 0:10 to 0:11}
+                └─>{identifier, 'n':nil, 0:10 to 0:11}
+            └─>{i32, 'i32':nil, 0:12 to 0:15}
+    └─>{type list, '':nil, 0:17 to 0:20}
+        └─>{i32, 'i32':nil, 0:17 to 0:20}
+    └─>nil
+    └─>{block, '':nil, 1:0 to 6:3}
+        └─>{if, 'if':nil, 2:1 to 4:4}
+            └─>{==, '==':nil, 2:4 to 2:10}
+                └─>{identifier, 'n':nil, 2:4 to 2:5}
+                └─>{i32 literal, '0':nil, 2:9 to 2:10}
+            └─>{block, '':nil, 2:11 to 4:4}
+                └─>{return, 'return':nil, 3:2 to 3:10}
+                    └─>{i32 literal, '1':nil, 3:9 to 3:10}
+            └─>nil
+            └─>nil
+        └─>{return, 'return':nil, 5:1 to 5:21}
+            └─>{*, '*':nil, 5:8 to 5:21}
+                └─>{identifier, 'n':nil, 5:8 to 5:9}
+                └─>{procedure call, '':nil, 5:12 to 5:21}
+                    └─>{expression list, '':nil, 5:17 to 5:20}
+                        └─>{-, '-':nil, 5:17 to 5:20}
+                            └─>{identifier, 'n':nil, 5:17 to 5:18}
+                            └─>{i32 literal, '1':nil, 5:19 to 5:20}
+                    └─>{identifier, 'fact':nil, 5:12 to 5:16}
+    └─>nil</code></pre>
+    <p>
+      You may find this unreadable, but i guarantee that after hours of debugging,
+      you will still find it unreadable. Anyway, here's what the compiler is telling you,
+      considering the excerpt <code>{identifier, 'fact':nil, 0:5 to 0:9}</code>
+    </p>
+    <ul>
+      <li>The indentation shows how deep the node is in the tree</li>
+      <li>The first field tells you what kind of node it is, in this case, it is an <code>identifier</code></li>
+      <li>
+        The second field is the section directly from the source, in this case <code>'fact'</code>,
+        followed by the type of the node, in this case, <code>nil</code> because types were still
+        not inferred.
+      </li>
+      <li>
+        The third and last field tells you where this node occurs in the source.
+        Since this is an identifier, it corresponds to the <code>'fact'</code> token, directly from
+        source. But other nodes, like the <code>return</code> will comprise of longer sections.
+        The first tuple of numbers represents the line and column of the beginning of the node,
+        that is, like <code>line:colum</code>. The second one represents the end.
+      </li>
+    </ul>
+    <p>
+      Now, if we ignore all the clutter, here's the graph representation of that piece of code:
+    </p>
+    <figure>
+      <img src="./images/syntax-tree.svg" alt="overall">
+      <figcaption>syntax tree for the fact.mp program</figcaption>
+    </figure>
+    <p>
+      Here you can see much better the structure of the grammar, this is implemented inside the
+      compiler as a simple recursive data structure, you can find it in <code>src/core/module/module.go:17</code>.
+    </p>
+<pre><code>type Node struct {
+	Text   string
+	Lex    LxK.LexKind
+	Leaves []*Node
+
+	Type     *T.Type
+	MultiRet bool // if this is true, T == nil
+
+	Value *big.Int // for int literals
+
+	Range *Range
+}</code></pre>
+    <p>
+      Fields are filled depending on the type of the node, and in different phases of the compiler.
+      There are other ways to implement this data structure, for example, by using sum types.
+      Go does not have sum types, so we have to live with big structs.
+    </p>
   </section>
   <section>
     <h2 id="lex-parser">Lexer and parser</h2>
