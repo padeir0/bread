@@ -32,24 +32,16 @@
     <ol>
       <li><a href="#mp-briefly">A brief description of Millipascal</a></li>
       <li><a href="#comparch">The overall compiler architecture</a></li>
+      <li><a href="#error">The Error</a></li>
+      <li><a href="#lexemes">Lexemes</a></li>
       <li><a href="#ast">The abstract syntax tree (AST)</a></li>
-      <li><a href="#lex-parser">Lexer and parser</a></li>
-      <li><a href="#files">Files and modules</a></li>
-      <li><a href="#module-graph">The module graph</a></li>
-      <li><a href="#scope">The data structure for scopes</a></li>
-      <li><a href="#name-resolution">Steps in name resolution</a></li>
-      <li><a href="#types">The type system</a></li>
-      <li><a href="#type-of-types">The data structures for types</a></li>
-      <li><a href="#typechecking">Type inference and type checking</a></li>
-      <li><a href="#consteval">Constant evaluation</a></li>
-      <li><a href="#abstract-machine">The abstract machine</a></li>
-      <li><a href="#hir">Padeir0's Intermediate Representation (PIR)</a></li>
-      <li><a href="#ast-hir">From AST to PIR</a></li>
-      <li><a href="#hir-errors">Checking proper returns</a></li>
-      <li><a href="#hir-validation">PIR validation</a></li>
+      <li><a href="#scopes">Scopes</a></li>
+      <li><a href="#module-graph">The Module Graph</a></li>
+      <li><a href="#type-of-types">The Types of Types</a></li>
+      <li><a href="#pir">Padeir0's Intermediate Representation (PIR)</a></li>
+      <li><a href="#pir-validation">PIR validation</a></li>
       <li><a href="#mir">The Middle-level Intermediate Representation (MIR)</a></li>
-      <li><a href="#hir-mir">From PIR to MIR (register allocation)</a></li>
-      <li><a href="#mir-fasm">From MIR to FASM</a></li>
+      <li><a href="#mir-validation">MIR validation</a></li>
       <li><a href="#end">The End</a></li>
     </ol>
   </div>
@@ -293,7 +285,7 @@ end</code></pre>
   <section>
     <h2 id="comparch">The overall compiler architecture</h2>
     <p>
-      The compiler is a monolithic 15kloc project separated into varios modules,
+      The compiler is a monolithic 15kloc project separated into various modules,
       it generates FASM assembly and depends on FASM to generate ELF files.
     </p>
     <figure>
@@ -494,6 +486,109 @@ end</code></pre>
       simple and is almost an one-to-one translation.
     </p>
   </section>
+  <!--<section>
+    <h2 id="data-structures">Data Structures</h2>
+    <p>
+      This section aims to explain the data structures used throught all phases
+      of compilation.
+    </p>
+  </section>-->
+  <section>
+    <h2 id="error">The Error</h2>
+    <p>
+      Before any other data structure is introduced, i must tell
+      you about the <code>Error</code> type. This type is used
+      everywhere in the compiler, and contains information
+      to communicate errors with the user. Here it is:
+    </p>
+<pre><code>type Error struct {
+	Code     et.ErrorKind
+	Severity sv.Severity
+	Message  string
+	Location *Location
+}</code></pre>
+    <p>
+      The type <code>ErrorKind</code> is the error code, enumerated on
+      the file <code>src/core/error/errorkind.go</code>. This is used
+      mostly to test the compiler as i don't remember a single error
+      code from the top of my head.
+    </p>
+    <p>
+      <code>Serverity</code> is barely used, the only two valid kinds
+      are <code>Error</code> and <code>InternalError</code>. Which
+      represent, respectivelly, errors to blame on the user
+      and errors that are my fault.
+    </p>
+    <p>
+      <code>Message</code> is simply a string with the error message.
+    </p>
+    <p>
+      Finally, <code>Location</code> is a bit more complicated. Here is 
+      the full definition:
+    </p>
+<pre><code>type Location struct {
+	File  string
+	Range *Range
+}
+
+type Range struct {
+	Begin Position
+	End   Position
+}
+
+type Position struct {
+	Line   int
+	Column int
+}</code></pre>
+    <p>
+      Because most editors are line oriented, it is important that <code>Position</code>
+      represents something the user can understand. The type <code>Range</code> simply
+      encodes a section of source, from beginning to end. While the field <code>file</code>
+      is the file name of the source.
+    </p>
+  </section>
+  <section>
+    <h2 id="lexemes">Lexemes (Nodes)</h2>
+    <p>
+      A Lexeme is a simple data structure, it's single objective is
+      labeling a section of source. In <code>mpc</code>, lexemes do
+      not exist as a separate data structure. Instead, it is 
+      inlined with the abstract syntax tree node.
+      Two fields are of special interest: <code>Text</code>
+      which is of type <code>string</code>, and <code>Lex</code>
+      which is of type <code>LxK.LexKind</code>.
+    </p>
+    <p>
+      <code>Text</code> corresponds directly to a piece of source code.
+      It is a substring, and as strings in Go are immutable, it produces
+      no copies of the input string.
+    </p>
+    <p>
+      <code>LxK.LexKind</code> is an enum,
+      defined in <code>src/core/module/lexkind</code> as a bunch of constants.
+      This enum can both represent lexical kinds (<code>LEFTPAREN</code>, <code>RIGHTPAREN</code>, <code>IDENTIFIER</code>, ...)
+      as well as node kinds (<code>IDLIST</code>, <code>TYPELIST</code>, <code>INSTR</code>, ...).
+    </p>
+    <p>
+      The compiler can output lexemes by running <code>mpc --lexemes file.mp</code>.
+      Consider the tokenization of the following excerpt:
+    </p>
+<pre><code>proc max[a,b:i32] i32
+begin
+	if a >= b begin
+		return a;
+	end
+	return b;
+end</code></pre>
+    <p>
+      The function signature would be tokenized like so, with quotes added to remove ambiguity:
+    </p>
+<pre><code>"proc", "max", "[", "a", ",", "b", ":", "i32", "]", "i32"</code></pre>
+  </section>
+    <p>
+      Each substring marked with their respective <code>LexKind</code> according to the
+      rules in <code>src/lexer/lexer.go:245</code>.
+    </p>
   <section>
     <h2 id="ast">The abstract syntax tree (AST)</h2>
     <p>
@@ -590,60 +685,47 @@ end</code></pre>
       There are other ways to implement this data structure, for example, by using sum types.
       Go does not have sum types, so we have to live with big structs.
     </p>
+    <p>
+      The field <code>Leaves</code> is how the tree is linked together. It is
+      simply linked in a single direction, and all passes go top-down on the AST.
+    </p>
   </section>
   <section>
-    <h2 id="lex-parser">Lexer and parser</h2>
+    <h2 id="scopes">Scopes</h2>
   </section>
   <section>
-    <h2 id="files">Files and modules</h2>
+    <h2 id="module-graph">The Module Graph</h2>
   </section>
   <section>
-    <h2 id="module-graph">The module graph</h2>
+    <h2 id="type-of-types">The Types of Types</h2>
   </section>
   <section>
-    <h2 id="scope">The data structure for scopes</h2>
+    <h2 id="pir">Padeir0's Intermediate Representation (PIR)</h2>
   </section>
   <section>
-    <h2 id="name-resolution">Steps in name resolution</h2>
-  </section>
-  <section>
-    <h2 id="types">The type system</h2>
-  </section>
-  <section>
-    <h2 id="type-of-types">The data structures for types</h2>
-  </section>
-  <section>
-    <h2 id="typechecking">Type inference and type checking</h2>
-  </section>
-  <section>
-    <h2 id="consteval">Constant evaluation</h2>
-  </section>
-  <section>
-    <h2 id="abstract-machine">The abstract machine</h2>
-  </section>
-  <section>
-    <h2 id="hir">The Padeir0's Intermediate Representation (PIR)</h2>
-  </section>
-  <section>
-    <h2 id="ast-hir">From AST to PIR</h2>
-  </section>
-  <section>
-    <h2 id="hir-errors">Checking proper returns</h2>
-  </section>
-  <section>
-    <h2 id="hir-validation">PIR validation</h2>
+    <h2 id="pir-validation">PIR Validation</h2>
   </section>
   <section>
     <h2 id="mir">The Middle-level Intermediate Representation (MIR)</h2>
   </section>
   <section>
-    <h2 id="hir-mir">From PIR to MIR (register allocation)</h2>
-  </section>
-  <section>
-    <h2 id="mir-fasm">From MIR to FASM</h2>
+    <h2 id="mir-validation">MIR Validation</h2>
   </section>
   <section>
     <h2 id="end">The End</h2>
+    <pre><q>This is the end, my only friend, the end...</q></pre>
+    <p>
+      <code>mpc</code> was a big project that took way too long to finish.
+      I decided to archive it and write this exposition so that
+      it can serve as a resource to future compiler beginners.
+      Hopefully it was useful to you, or at least, i hope you
+      had fun reading this.
+    </p>
+    <p>
+      I love to talk about compilers, even though my experience is limited,
+      so if you have any questions or just want to show me what you're working
+      on, my email is <code>iureartur</code> at <code>id.uff.br</code>
+    </p>
   </section>
 </div>
 </body>
