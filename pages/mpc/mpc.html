@@ -51,8 +51,7 @@
       Millipascal is a simple imperative language.
       It looks like Pascal, hence the name. Here's a hello-world program:
     </p>
-<pre><code>
-from io import print
+<pre><code>from io import print
 
 data hello "Hello, World!\n"
 
@@ -692,6 +691,39 @@ end</code></pre>
   </section>
   <section>
     <h2 id="scopes">Scopes</h2>
+    <p>
+      Millipascal has only 3 nested scopes.
+      The <i>global</i> module scope, where procedures, constants and data
+      declarations are defined.
+      The <i>argument</i> scope, where procedure arguments are defined.
+      finally the <i>local</i> scope,
+      that contains the variables declared inside procedures.
+    </p>
+    <p>
+      Both <i>Argument</i> and <i>Local</i> scopes are inside the <code>Proc</code>
+      data structure, at <code>src/core/module/module.go:239</code>. While
+      the <i>global</i> scope is inside the <code>Module</code> data structure,
+      at <code>src/core/module/module.go:82</code>.
+    </p>
+    <p>
+      All scopes are simple Go maps, for example, the global
+      scope is defined as <code>map[string]*Global</code>, whereas
+      the argument and local names are similar, with two structures:
+      a map <code>map[string]int</code> that maps the identifier
+      to a index, and an array <code>[]*Local</code> that contains the
+      information about a local on that given index. Locals are stored
+      in a different way to preserve order of arguments for the ABI.
+    </p>
+    <figure>
+      <img src="./images/scopes.svg" alt="overall">
+      <figcaption>scopes of millipascal</figcaption>
+    </figure>
+    <p>
+      The compiler checks if a name exists by first checking against
+      the local scope, if it fails, then it checks the argument scope,
+      then the global scope. Following the direction of the arrows in the
+      above diagram.
+    </p>
   </section>
   <section>
     <h2 id="module-graph">The Module Graph</h2>
