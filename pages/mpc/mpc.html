@@ -16,28 +16,43 @@
   </div>
   <div class="abstract">
     <p>
-      This document is an exposition of the Millipascal compiler (<code>mpc</code>),
-      it explains on a high level how each component of the compiler works,
-      and serves as resource for other people who are trying to solve
+      This document is an exposition of the Millipascal compiler (<code>mpc</code>).
+      It serves as resource for other people who are trying to solve
       similar problems as i did.
     </p>
     <p>
       Additional resources to this document are
       <a href="../millipascal-spec/spec.html">the language specification</a> and
       <a href="https://github.com/padeir0/millipascal">compiler source</a>.
+      If all else fails, feel free to ask a question as an 
+      <a href="https://github.com/padeir0/bread/issues">issue on github</a>.
     </p>
+    <p>
+      The questions this document is meant to answer are:
+    </p>
+    <ul>
+      <li>How did I structure the compiler? What comes after parsing?</li>
+      <li>How the compiler handles errors?</li>
+      <li>How the main language features are implemented?</li>
+      <li>How did I represent the source code inside the compiler?</li>
+      <li>What the fuck is millipascal?</li>
+    </ul>
   </div>
   <div class="summary">
     <h2>Contents</h2>
     <ol>
       <li><a href="#mp-briefly">A brief description of Millipascal</a></li>
       <li><a href="#comparch">The overall compiler architecture</a></li>
-      <li><a href="#error">The Error</a></li>
-      <li><a href="#lexemes">Lexemes</a></li>
-      <li><a href="#ast">The abstract syntax tree (AST)</a></li>
-      <li><a href="#scopes">Scopes</a></li>
-      <li><a href="#module-graph">The Module Graph</a></li>
-      <li><a href="#type-of-types">The Types of Types</a></li>
+      <li><a href="#error">Errors</a></li>
+      <li><a href="#hir">The High Level Intermediate Representation</a>
+        <ol>
+          <li><a href="#ast">The abstract syntax tree (AST)</a></li>
+          <li><a href="#lexemes">Lexemes</a></li>
+          <li><a href="#scopes">Scopes</a></li>
+          <li><a href="#module-graph">The Module Graph</a></li>
+          <li><a href="#type-of-types">The Types of Types</a></li>
+        </ol>
+      </li>
       <li><a href="#pir">Padeir0's Intermediate Representation (PIR)</a></li>
       <li><a href="#pir-validation">PIR validation</a></li>
       <li><a href="#mir">The Middle-level Intermediate Representation (MIR)</a></li>
@@ -278,9 +293,9 @@ end</code></pre>
       hole you're getting into. If it is not clear how some mechanism
       of the language works, a <a href="../millipascal-spec/spec.html">specification</a> is available. If even
       then something seems wrong, please feel free to
-      <a href="https://github.com/padeir0/bread/issues">raise an issue</a>.
     </p>
   </section>
+
   <section>
     <h2 id="comparch">The overall compiler architecture</h2>
     <p>
@@ -485,18 +500,16 @@ end</code></pre>
       simple and is almost an one-to-one translation.
     </p>
   </section>
-  <!--<section>
-    <h2 id="data-structures">Data Structures</h2>
-    <p>
-      This section aims to explain the data structures used throught all phases
-      of compilation.
-    </p>
-  </section>-->
+
   <section>
-    <h2 id="error">The Error</h2>
+    <h2 id="error">Errors</h2>
     <p>
-      Before any other data structure is introduced, i must tell
-      you about the <code>Error</code> type. This type is used
+      The compiler halts as soon as it encounters a single error.
+      This is simple, but sufficient, as long as the user knows
+      a bit about what he is doing.
+    </p>
+    <p>
+      There is a single <code>Error</code> type. This type is used
       everywhere in the compiler, and contains information
       to communicate errors with the user. Here it is:
     </p>
@@ -513,7 +526,7 @@ end</code></pre>
       code from the top of my head.
     </p>
     <p>
-      <code>Serverity</code> is barely used, the only two valid kinds
+      <code>Serverity</code> is barely used, the only two used kinds
       are <code>Error</code> and <code>InternalError</code>. Which
       represent, respectivelly, errors to blame on the user
       and errors that are my fault.
@@ -545,49 +558,83 @@ type Position struct {
       encodes a section of source, from beginning to end. While the field <code>file</code>
       is the file name of the source.
     </p>
+    <p>
+      To display the error to the user, a simple <code>String</code> method
+      transforms the error to a string representation. This code is
+      located in <code>src/core/core.go:120</code>.
+    </p>
+<pre><code>func (this *Error) String() string {
+	source := this.Location.Source()
+	message := this.Location.String() + " " +
+		this.Severity.String() +
+		": " + this.Message
+	if source != "" {
+		return message + "\n" + source
+	}
+	return message
+}</code></pre>
+    <p>
+      To print the source in the error message, the file is opened again
+      and the section is extracted. The offending part is then coloured red
+      using ANSI color codes. Here's some typical <code>mpc</code> errors:
+    </p>
+<pre><code>fact.mp:2:4 to 2:14 error: invalid number of arguments, expected: 1
+    if <span style="color: red;">fact[5, 5]</span> != 120 begin
+
+F.mp:15:9 to 15:14 error: name is not defined
+    proc F[a:<span style="color: red;">Undef</span>] i32
+
+ioutil.mp:0:29 to 0:39 error: name not defined in module
+    from io import print, fatal, <span style="color: red;">everything</span>
+
+conv.mp:0:0 to 0:27 error: 'io' forms a invalid cycle:
+(io, ioutil, conv, io)
+    <span style="color: red;">from io import print, fatal</span></code></pre>
+    <p>
+      As you can see, errors are simple and sometimes even bad, but they're good
+      enough to find what you did wrong.
+    </p>
   </section>
+
   <section>
-    <h2 id="lexemes">Lexemes (Nodes)</h2>
+    <h2 id="hir">The High Level Intermediate Representation</h2>
     <p>
-      A Lexeme is a simple data structure, it's single objective is
-      labeling a section of source. In <code>mpc</code>, lexemes do
-      not exist as a separate data structure. Instead, it is 
-      inlined with the abstract syntax tree node.
-      Two fields are of special interest: <code>Text</code>
-      which is of type <code>string</code>, and <code>Lex</code>
-      which is of type <code>LxK.LexKind</code>.
+      The first intermediate representation is the <code>Module</code> type.
+      Defined in <code>src/core/module/module.go:82</code>. This data structure
+      aglomerates information of the source, including scopes, syntax trees, 
+      module graphs, types, etc.
+    </p>
+<pre><code>type Module struct {
+	BasePath string
+	Name     string
+	FullPath string
+	Root     *Node
+
+	Globals      map[string]*Global
+	Dependencies map[string]*Dependency
+	Exported     map[string]*Global
+
+	Visited bool
+}</code></pre>
+    <p>
+      A module has a one to one relation with the source files, this is why <code>FullPath</code>
+      is present in the structure. Similarly, all imported modules are also files, and each have
+      a corresponding <code>Module</code> instance.
     </p>
     <p>
-      <code>Text</code> corresponds directly to a piece of source code.
-      It is a substring, and as strings in Go are immutable, it produces
-      no copies of the input string.
+      The three maps, <code>Globals</code>, <code>Dependencies</code> and <code>Exported</code>
+      are first populated by the name resolution phase. The <code>map[string]*Dependency</code>
+      declares a map of modules, creating a dependency graph. Here's the definition of <code>Dependency</code>:
     </p>
+<pre><code>type Dependency struct {
+	M      *Module
+	Source *Node
+}</code></pre>
     <p>
-      <code>LxK.LexKind</code> is an enum,
-      defined in <code>src/core/module/lexkind</code> as a bunch of constants.
-      This enum can both represent lexical kinds (<code>LEFTPAREN</code>, <code>RIGHTPAREN</code>, <code>IDENTIFIER</code>, ...)
-      as well as node kinds (<code>IDLIST</code>, <code>TYPELIST</code>, <code>INSTR</code>, ...).
+      It is a simple pair of a <code>Module</code> and the node where that module was imported.
     </p>
-    <p>
-      The compiler can output lexemes by running <code>mpc --lexemes file.mp</code>.
-      Consider the tokenization of the following excerpt:
-    </p>
-<pre><code>proc max[a,b:i32] i32
-begin
-	if a >= b begin
-		return a;
-	end
-	return b;
-end</code></pre>
-    <p>
-      The function signature would be tokenized like so, with quotes added to remove ambiguity:
-    </p>
-<pre><code>"proc", "max", "[", "a", ",", "b", ":", "i32", "]", "i32"</code></pre>
   </section>
-    <p>
-      Each substring marked with their respective <code>LexKind</code> according to the
-      rules in <code>src/lexer/lexer.go:245</code>.
-    </p>
+
   <section>
     <h2 id="ast">The abstract syntax tree (AST)</h2>
     <p>
@@ -689,6 +736,50 @@ end</code></pre>
       simply linked in a single direction, and all passes go top-down on the AST.
     </p>
   </section>
+
+  <section>
+    <h2 id="lexemes">Lexemes (Nodes)</h2>
+    <p>
+      A Lexeme's single objective is
+      labeling a section of source. In <code>mpc</code>, lexemes do
+      not exist as a separate data structure. Instead, it is 
+      inlined with the abstract syntax tree node.
+      Two fields are of special interest: <code>Text</code>
+      which is of type <code>string</code>, and <code>Lex</code>
+      which is of type <code>LxK.LexKind</code>.
+    </p>
+    <p>
+      <code>Text</code> corresponds directly to a piece of source code.
+      It is a substring, and as strings in Go are immutable, it produces
+      no copies of the input string.
+    </p>
+    <p>
+      <code>LxK.LexKind</code> is an enum,
+      defined in <code>src/core/module/lexkind</code> as a bunch of constants.
+      This enum can both represent lexical kinds (<code>LEFTPAREN</code>, <code>RIGHTPAREN</code>, <code>IDENTIFIER</code>, ...)
+      as well as node kinds (<code>IDLIST</code>, <code>TYPELIST</code>, <code>INSTR</code>, ...).
+    </p>
+    <p>
+      The compiler can output lexemes by running <code>mpc --lexemes file.mp</code>.
+      Consider the tokenization of the following excerpt:
+    </p>
+<pre><code>proc max[a,b:i32] i32
+begin
+	if a >= b begin
+		return a;
+	end
+	return b;
+end</code></pre>
+    <p>
+      The function signature would be tokenized like so, with quotes added to remove ambiguity:
+    </p>
+<pre><code>"proc", "max", "[", "a", ",", "b", ":", "i32", "]", "i32"</code></pre>
+    <p>
+      Each substring marked with their respective <code>LexKind</code> according to the
+      rules in <code>src/lexer/lexer.go:245</code>.
+    </p>
+  </section>
+
   <section>
     <h2 id="scopes">Scopes</h2>
     <p>
@@ -745,18 +836,12 @@ end</code></pre>
   </section>
   <section>
     <h2 id="end">The End</h2>
-    <pre><q>This is the end, my only friend, the end...</q></pre>
     <p>
       <code>mpc</code> was a big project that took way too long to finish.
       I decided to archive it and write this exposition so that
       it can serve as a resource to future compiler beginners.
       Hopefully it was useful to you, or at least, i hope you
       had fun reading this.
-    </p>
-    <p>
-      I love to talk about compilers, even though my experience is limited,
-      so if you have any questions or just want to show me what you're working
-      on, my email is <code>iureartur</code> at <code>id.uff.br</code>
     </p>
   </section>
 </div>
