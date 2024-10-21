@@ -917,6 +917,140 @@ end</code></pre>
 
   <section>
     <h2 id="type-of-types">The Types of Types</h2>
+    <p>
+      I often find questions on how to represent the structure of types, so that
+      one can compare them and return meaningful errors. Here are a few types in Millipascal:
+    </p>
+    <pre><code>i32     ptr     proc[][]     proc[i32, i32][ptr]</code></pre>
+    <p>
+      Besides those, which are often called "anonymous types", there are nominal types created by 
+      <code>struct</code> declarations.
+    </p>
+<pre><code>struct BigInt begin
+    Array:I32A;
+    Cap,Len:i16;
+    Neg:bool;
+
+    _pad1:u8; _pad2:u16;
+end</code></pre>
+    <p>
+      As structs are nominal types, we need not to compare them by structure, only by name.
+      In essence, structs are just pointers, so it's completely fine to just cast them to <code>ptr</code>.
+      However, we do need information about field names and field types, so structural information
+      must still exist. Here's how i represent structs in the compiler:
+    </p>
+<pre><code>type Struct struct {
+	Module   string
+	Name     string
+	Fields   []Field
+	FieldMap map[string]int
+	Size     *big.Int
+
+	WellBehaved bool // whether it can be used to typecheck blobs
+}</code></pre>
+    <p>
+      Again, we see both <code>Module</code> and <code>Name</code>, this is because any
+      two structures in different modules are by definition different, ie, <code>M1::mystruct</code>
+      is not the same as <code>M2::mystruct</code>.
+    </p>
+    <p>
+      Fields must also remain in order, this is why we use both <code>map[string]int</code> and <code>[]Fields</code>.
+      We then use a function to grab information based on names:
+    </p>
+    <pre><code>func (this *Struct) Field(name string) (Field, bool) {
+	i, ok := this.FieldMap[name]
+	if !ok {
+		return Field{}, false
+	}
+	return this.Fields[i], true
+}</code></pre>
+    <p>
+      While <code>Field</code> simply encodes information about offset, name and type:
+    </p>
+<pre><code>type Field struct {
+	Name   string
+	Type   *Type
+	Offset *big.Int
+}</code></pre>
+    <p>
+      This <code>Struct</code> type is then part of the <code>Type</code> type,
+      which encodes all necessary information about any Millipascal type.
+    </p>
+<pre><code>type Type struct {
+	Basic  BasicType
+	Proc   *ProcType
+	Struct *Struct
+}</code></pre>
+    <p>
+      This is also one of those Go structs that should have been an sum type.
+      In essence, only one of the fields ever carries a valid value,
+      with the exception that if <code>Struct</code> is non-nil, then
+      <code>Basic</code> is set to <code>ptr</code>.
+      The <code>Struct</code> field was already explained, while
+      <code>Basic</code> is just an enumeration of all built-in types.
+      Lastly, the <code>ProcType</code> is defined as the following:
+    </p>
+<pre><code>type ProcType struct {
+	CC   CCKind
+	Args []*Type
+	Rets []*Type
+}</code></pre>
+    <p>
+      Which includes information no the calling convention (<code>CCKind</code>) as an enumeration,
+      and also inclues all arguments and returns, in order. Since <code>ProcType</code> is defined in
+      terms of <code>Type</code>, this is a recursive definition.
+    </p>
+    <p>
+      The code that compares if two types are identical is bad enough that i will not dare to
+      show it here (<code>src/core/types/types.go:59</code>), instead,
+      here's a high level description of what it does, given <code>T</code> and <code>U</code>
+      as types:
+    </p>
+    <ol>
+      <li>
+        If <code>T</code> and <code>U</code> are not of the same kind, ie, not both
+        basic, or not both procedures, then they are different.
+      </li>
+      <li>
+        If both <code>T</code> and <code>U</code> are basic types, then the <code>Basic</code> enum
+        is compared directly (as an integer).
+      </li>
+      <li>
+        If both <code>T</code> and <code>U</code> are procedures, the arguments and returns
+        of each procedure is compared in order, if any one of them is not equal, the procedure
+        types are different.
+      </li>
+      <li>
+        If both <code>T</code> and <code>U</code> are struct types, then they are equal if
+        they have the same names and are in the same module.
+      </li>
+    </ol>
+    <p>
+      How do we build the types from source is a whole deal in itself, this is done by
+      several procedures, including <code>createInternalStructs</code>
+      in <code>src/typechecker/typechecker.go:89</code>, also <code>getType</code>
+      in the same file at line <code>467</code> and other small procedures.
+    </p>
+    <p>
+      How we infer types is rather simple, we simply propagate the types of expressions
+      up the syntax tree, for example:
+    </p>
+    <figure>
+      <img src="./images/inference.svg" alt="inference">
+      <figcaption>inference of <code>1 + a.field</code> as <code>i32</code></figcaption>
+    </figure>
+    <p>
+      Inference is done on all expressions, the only minor difference is that global
+      constants must be inferred in topological order, ie, all dependencies must be
+      resolved before you start to infer a global expression.
+    </p>
+    <p>
+      The module IR is all about placing information on top the source code,
+      the next intermediate representation does not even look like Millipascal,
+      in fact, i created it in a manner that is generic enough that other languages
+      could use that intermediate representation as a target, this is why it's called
+      <i>Padeir0's Intermediate Representation</i> and not <i>Millipascal's Intermediate Representation</i>.
+    </p>
   </section>
   <section>
     <h2 id="pir">Padeir0's Intermediate Representation (PIR)</h2>
