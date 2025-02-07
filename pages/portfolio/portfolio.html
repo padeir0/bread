@@ -12,14 +12,20 @@
 </div>
 <div class="container">
   <div class="title">
-    <h1>Portifólio</h1>
+    <h1>Portfólio</h1>
   </div>
   <div class="abstract">
     <p>
+      Esse portfólio apresenta projetos
+      desenvolvidos desde 2020, abrangendo
+      linguagens de programação, compiladores,
+      alocadores de memória, inteligência artificial
+      e ferramentas para microcontroladores.
     </p>
   </div>
   <div class="summary">
-    <h2>Sumário</h2>
+    <p>
+    Sumário:
     <a href="#psi">python-self-interpreter</a>,
     <a href="#mish">mish</a>,
     <a href="#compalloc">compalloc</a>,
@@ -28,85 +34,112 @@
     <a href="#chess">Chess</a>,
     <a href="#upt">UPT</a>,
     <a href="#taucon">taucon</a>,
-    <a href="#raytracer">raytracer</a>,
     <a href="#pquery">PQuery</a>,
     <a href="#gna">GNA</a>.
+    <p>
   </div>
   <section>
-    <h2 id="psi">python-self-interpreter</h2>
-    <h4>2024</h4>
+    <h4 id="psi">python-self-interpreter</h4>
     <p>
-      ...
+      Um interpretador de Python escrito em Python, capaz
+      de rodar o próprio código. Foi feito como projeto de
+      conclusão da disciplina "Programação em Python" da UFF.
+      <a href="https://github.com/padeir0/python-self-interpreter">Repositório</a>.
     </p>
   </section>
   <section>
-    <h2 id="mish">mish</h2>
-    <h4>2024</h4>
+    <h4 id="mish">mish</h4>
     <p>
-      ...
+      Uma interface de linha de comando para microcontroladores.
+      É implementada diretamente em cima de um alocador linear
+      e consegue rodar com 4KB de memória. Implementa até mesmo
+      um mecanismo de piping entre os comandos.
+      <a href="https://github.com/padeir0/mish">Repositório</a>.
     </p>
   </section>
   <section>
-    <h2 id="compalloc">compalloc</h2>
-    <h4>2024</h4>
+    <h4 id="compalloc">compalloc</h4>
     <p>
-      ...
+      Uma biblioteca de alocadores de memória de fácil composição.
+      É possível, por exemplo, colocar um alocador dentro de outro.
+      Foi implementada principalmente para o uso em
+      microcontroladores, para isso, tomei cuidado para atingir
+      bom desempenho e menor tamanho.
+      <a href="https://github.com/padeir0/compalloc">Repositório</a>.
     </p>
   </section>
   <section>
-    <h2 id="ras">ras</h2>
-    <h4>2024</h4>
+    <h4 id="ras">ras</h4>
     <p>
-      ...
+      Um disassembler de UF2 para arquitetura RP2040 da Raspberry Pi.
+      É uma grande gambiarra que implementa a codificação de Arm M0+
+      na mão, mas funciona.
+      <a href="https://github.com/padeir0/ras">Repositório</a>.
     </p>
   </section>
   <section>
-    <h2 id="mp">Millipascal</h2>
-    <h4>2022~2024</h4>
+    <h4 id="mp">Millipascal</h4>
     <p>
-      ...
+      Linguagem autoral e seu respectivo compilador para assembly.
+      É um projeto de compilador moderno, com 4 representações
+      intermediárias do código. A única otimização implementada
+      foi alocação de registradores, mas a linguagem não se sai
+      tão mal quando comparada com C ou Assembly.
+    </p>
+    <p>
+      Não só implementei um compilador: a "biblioteca padrão"
+      contém implementações de alocadores de memória,
+      números de precisão arbitrária e vários utilitários, tudo isso
+      em Millipascal. Até o <code>print</code> é implementado diretamente
+      na linguagem usando procedimentos em assembly.
+      <a href="https://github.com/padeir0/millipascal">Repositório</a>.
     </p>
   </section>
   <section>
-    <h2 id="chess">Chess</h2>
-    <h4>2023</h4>
+    <h4 id="chess">Chess</h4>
     <p>
-      ...
+      Um conjunto de algoritmos de busca e de avaliação
+      para motores de xadrez.
+      A motivação principal era explorar esses algoritmos
+      e, no final, até a melhor combinação de busca
+      e avaliação fazem um péssimo adversário contra um humano.
+      Porém, foi interessante ver como as diferentes estratégias
+      competem uma com a outra.
+      <a href="https://github.com/padeir0/chess">Repositório</a>.
     </p>
   </section>
   <section>
-    <h2 id="upt">UPT</h2>
-    <h4>2023</h4>
+    <h4 id="upt">UPT</h4>
     <p>
-      ...
+      Um compilador de Portugol para C, com mensagens
+      de erro em português.
+      <a href="https://github.com/padeir0/upt">Repositório</a>.
     </p>
   </section>
   <section>
-    <h2 id="taucon">taucon</h2>
-    <h4>2023</h4>
+    <h4 id="taucon">taucon</h4>
     <p>
-      ...
+      Um programa que enumera e testa expressões
+      de cálculo proposicional para satisfação lógica.
+      <a href="https://github.com/padeir0/taucon">Repositório</a>.
     </p>
   </section>
   <section>
-    <h2 id="raytracer">raytracer</h2>
-    <h4>2023</h4>
+    <h4 id="pquery">PQuery</h4>
     <p>
-      ...
+      Uma linguagem de busca para acelerar a escrita
+      de queries para views do banco de dados.
     </p>
   </section>
   <section>
-    <h2 id="pquery">PQuery</h2>
-    <h4>2021</h4>
+    <h4 id="gna">Game Networking Abstraction</h4>
     <p>
-      ...
-    </p>
-  </section>
-  <section>
-    <h2 id="gna">Game Networking Abstration</h2>
-    <h4>2020</h4>
-    <p>
-      ...
+      Uma biblioteca que abstrai os detalhes de networking
+      que ocorrem normalmente em um jogo. Ultimamente parei o desenvolvimento
+      pois o protocolo <i>gob</i>, no qual baseei todo o projeto, não lida muito bem
+      com multicast ou broadcast. Isso fazia o comportamento de serialização
+      ter complexidade quadrática em relação ao número de jogadores.
+      <a href="https://github.com/padeir0/gna">Repositório</a>.
     </p>
   </section>
 </div>
